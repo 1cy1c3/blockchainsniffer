@@ -1,0 +1,21 @@
+**Discover the Blockchain Sniffer**
+
+Dive into the fascinating world of the Ethereum blockchain with my Wallet Tracker. Born out of passion and curiosity, this hobbyist tool provides a unique and optical experience for enthusiasts wanting to explore money movements within the Ethereum ecosystem.
+
+**Key Features:**
+
+Depth Dimension: 
+Get a bird's-eye view of transactions and their subsequent journey. By adjusting the depth, you can trace the distance between the origin wallet and its many potential destination wallets. Witness the intricate pathways your money takes in the digital realm.
+
+Value-Based Filtering: 
+Customize your exploration by setting a monetary threshold. By increasing the money value, you can sift through transactions, focusing only on those that meet your set criteria. Say goodbye to the noise of low-value transactions and hello to impactful insights.
+
+**Adaptable Run Time:**
+
+Time Frame & Depth: 
+The tool's adaptability is its charm. Set your desired time window to capture transactions from specific periods. Remember, an expansive time frame coupled with greater depth can extend the application's processing time, sometimes taking up to 15 minutes.
+Money Value: Adjusting the money value upwards not only refines the transactions but also ensures a quicker run time. Perfect for those eager moments when you just can't wait!
+
+**Why Try It Out?**
+
+Whether you're a blockchain novice or a seasoned enthusiast, the Ethereum Wallet Tracker offers an intriguing way to visually navigate and understand the flow of funds. It's not just a tool; it's an adventure into the depths of the Ethereum blockchain. Explore, learn, and have fun as you unveil the digital mysteries one transaction at a time. Happy tracking!

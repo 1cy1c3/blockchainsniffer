@@ -1,0 +1,11 @@
+<style>
+a:link , a:visited{{
+color: #FFFFFF;
+text-decoration: none;
+}}
+
+a:hover,  a:active {{
+color: #FF4B4B;
+text-decoration: none;
+}}
+</style>

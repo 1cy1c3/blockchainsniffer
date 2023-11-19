@@ -1,0 +1,14 @@
+matplotlib
+networkx
+streamlit-extras
+openai
+requests
+streamlit
+tiktoken
+scipy
+pandas
+streamlit-pandas-profiling
+ydata-profiling
+pyvis
+numpy
+web3
