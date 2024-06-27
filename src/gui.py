@@ -96,7 +96,6 @@ def load_ui_bsc():
             ss["submit"] = True
 
 
-@st.cache_data(show_spinner=False)
 def draw_network(data: set | list):
     data_str = json.dumps(data)
     df = pd.read_json(data_str)
