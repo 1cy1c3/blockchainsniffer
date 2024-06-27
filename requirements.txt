@@ -12,3 +12,4 @@ ydata-profiling
 pyvis
 numpy
 web3
+pydantic-settings

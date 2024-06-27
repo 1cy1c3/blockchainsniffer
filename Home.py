@@ -1,8 +1,8 @@
 import streamlit as st
 
-import functions.scan as scan
-import functions.utils as utils
-import functions.gui as gui
+import src.scan as scan
+import src.utils as utils
+import src.gui as gui
 
 
 ss = st.session_state
