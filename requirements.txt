@@ -8,7 +8,6 @@ tiktoken
 scipy
 pandas
 streamlit-pandas-profiling
-ydata-profiling
 pyvis
 numpy
 web3
