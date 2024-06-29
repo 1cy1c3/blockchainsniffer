@@ -21,7 +21,7 @@ ss = st.session_state
 
 def load_button(name):
     if name == "ref_buttons":
-        with open("style/ref_buttons.css", "r") as f:
+        with open("css/ref_buttons.css", "r") as f:
             ref_buttons_css = f.read()
         st.markdown(ref_buttons_css, unsafe_allow_html=True)
 
@@ -40,14 +40,14 @@ def load_main_bsc():
 
 @st.cache_data(show_spinner=False)
 def load_header():
-    with open("style/header.css") as f:
+    with open("css/header.css") as f:
         header_css = f.read()
     st.markdown(header_css, unsafe_allow_html=True)
 
 
 @st.cache_data(show_spinner=False)
 def load_footer():
-    with open("style/footer.css") as f:
+    with open("css/footer.css") as f:
         footer_css = f.read()
     st.markdown(footer_css, unsafe_allow_html=True)
 
@@ -61,7 +61,7 @@ def load_ui_bsc():
         depth_input = st.number_input(
             label="Pick a depth",
             min_value=0,
-            max_value=2,
+            max_value=3,
             value=0
         )
         chain_input = st.selectbox(
@@ -79,7 +79,7 @@ def load_ui_bsc():
             label="Select Amount USD to filter for",
             min_value=0,
             max_value=100000,
-            step=5000
+            step=1000
         )
         submit_wallet = st.form_submit_button(label="Submit Wallet", on_click=utils.clear_ss())
         if submit_wallet:
@@ -181,9 +181,10 @@ def draw_network(data: set | list):
         os.remove(temp_name)
 
         # Geben Sie den HTML-Inhalt in Streamlit aus
-        st.write("Red: Origin Wallet; "
-                 "Yellow: Exchanges; "
-                 "Blue: Unknown")
+        st.write(":red[Origin Wallet]")
+        st.write(":orange[High Activity]")
+        st.write(":blue[Unknown]")
+
         st.components.v1.html(html_content, height=615)
 
         df = pd.DataFrame(data)
@@ -211,7 +212,7 @@ def draw_network(data: set | list):
         )
 
 
-@st.cache_data(show_spinner=False, experimental_allow_widgets=True)
+@st.cache_data(show_spinner=False)
 def load_record(data_json: list[dict]):
     data_csv = utils.json_to_csv(data_json)
     data_report = data_csv.profile_report()

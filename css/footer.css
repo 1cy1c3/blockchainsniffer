@@ -1,0 +1,17 @@
+<style>
+.footer {
+position: fixed;
+background-color: #0E1117;
+height: 50px;
+line-height: 50px;
+left: 0;
+bottom: 0;
+width: 100%;
+color: white;
+text-align: center;
+z-index: 9999;
+}
+</style>
+<div class="footer">
+<p>Developed by <span style="color: lightblue;">1cy1c3.eth</span></p>
+</div>
