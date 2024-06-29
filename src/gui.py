@@ -19,13 +19,6 @@ import datetime
 ss = st.session_state
 
 
-def load_button(name):
-    if name == "ref_buttons":
-        with open("css/ref_buttons.css", "r") as f:
-            ref_buttons_css = f.read()
-        st.markdown(ref_buttons_css, unsafe_allow_html=True)
-
-
 def load_sidebar_bsc():
     with open("text/sidebar_bsc.txt") as file:
         sidebar_txt = file.read()
