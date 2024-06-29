@@ -1,3 +1,4 @@
+import time
 from typing import Any, Set, List, Dict, Optional
 
 import streamlit as st
@@ -112,12 +113,11 @@ def timestamp_to_date(timestamp: int) -> str:
     return date.strftime('%Y/%m/%d %H:%M:%S')
 
 
-@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=1, max=10))
 def _erc20_transactions(wallet: str, depth: int, visited: set = None) -> list[dict] | None:
     if visited is None:
         visited = set()
 
-    if depth > ss["depth"] + 1 or wallet in visited:
+    if depth > ss["depth"] or wallet in visited:
         return None
 
     visited.add(wallet)
@@ -182,12 +182,14 @@ async def fetch_data(url: str, session: aiohttp.ClientSession) -> Optional[Dict]
         return data
 
 
+@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=1, max=10))
 async def erc20_transactions(wallet: str, depth: int, visited: Set[str] = None, sem: asyncio.Semaphore = None,
                              session: aiohttp.ClientSession = None) -> List[Dict]:
+    time.sleep(.2)
     if visited is None:
         visited = set()
 
-    if depth > ss["depth"] + 1 or wallet in visited:
+    if depth > ss["depth"] or wallet in visited:
         return []
 
     visited.add(wallet)

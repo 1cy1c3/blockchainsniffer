@@ -27,11 +27,6 @@ def load_sidebar_bsc():
 
 
 @st.cache_data(show_spinner=False)
-def load_main_bsc():
-    st.header("Blockchain Sniffer")
-
-
-@st.cache_data(show_spinner=False)
 def load_header():
     with open("css/header.css") as f:
         header_css = f.read()
@@ -47,34 +42,44 @@ def load_footer():
 
 def load_ui_bsc():
     with st.form("user_input"):
-        wallet_input = st.text_input(
+        lCol, rCol = st.columns([1, 1])
+        wallet_input = lCol.text_input(
             label="Enter any Ethereum Address",
             value="0x9E29A34dFd3Cb99798E8D88515FEe01f2e4cD5a8"
         )
-        depth_input = st.number_input(
-            label="Pick a depth",
-            min_value=0,
-            max_value=3,
-            value=0
-        )
-        chain_input = st.selectbox(
+
+        chain_input = lCol.selectbox(
             label="Pick a Chain",
             options=("Ethereum", "Arbitrum", "Polygon", "Optimism", "Base")
         )
 
-        start_date, end_date = date_range_picker(
-            title="Pick a date range",
-            max_date=datetime.datetime.today()
+        with rCol:
+            start_date, end_date = date_range_picker(
+                title="Pick a date range",
+                max_date=datetime.datetime.today()
+            )
+
+        depth_input = rCol.number_input(
+            label="Pick a depth",
+            min_value=0,
+            max_value=5,
+            value=0
         )
+
         start_datetime = datetime.datetime(start_date.year, start_date.month, start_date.day)
         end_datetime = datetime.datetime(end_date.year, end_date.month, end_date.day)
-        threshold_input = st.slider(
+
+        threshold_input = rCol.slider(
             label="Select Amount USD to filter for",
             min_value=0,
             max_value=100000,
             step=1000
         )
-        submit_wallet = st.form_submit_button(label="Submit Wallet", on_click=utils.clear_ss())
+
+        submit_wallet = lCol.form_submit_button(label="Submit Wallet", on_click=utils.clear_ss())
+        st.info('The bigger the depth and time window, the longer the calculation will take. '
+                'Increasing the USD threshold will improve this', icon='ℹ️')
+        
         if submit_wallet:
             ss["chain"] = chain_input
             ss["threshold_usd"] = threshold_input
@@ -180,30 +185,6 @@ def draw_network(data: set | list):
 
         st.components.v1.html(html_content, height=615)
 
-        df = pd.DataFrame(data)
-
-        # Add a new column for the hyperlinks
-        base_tx_url = APILink(address=None, tx_type=None).get_tx_url()
-        base_wallet_url = APILink(address=None, tx_type=None).get_wallet_url()
-
-        df["From"] = df["From"].apply(
-            lambda x: base_wallet_url + x)
-        df["To"] = df["To"].apply(
-            lambda x: base_wallet_url + x)
-        df["Hash"] = df["Hash"].apply(
-            lambda x: base_tx_url + x)
-
-        # Display the DataFrame in Streamlit with links
-        st.data_editor(
-            df,
-            column_config={
-                "From": st.column_config.LinkColumn(),
-                "To": st.column_config.LinkColumn(),
-                "Hash": st.column_config.LinkColumn()
-            },
-            hide_index=True,
-        )
-
 
 @st.cache_data(show_spinner=False)
 def load_record(data_json: list[dict]):
@@ -211,3 +192,49 @@ def load_record(data_json: list[dict]):
     data_report = data_csv.profile_report()
 
     st_profile_report(data_report)
+
+
+def load_fake_df(data):
+    if data:
+        hcol1, hcol2, hcol3, hcol4, hcol5, hcol6, hcol7, hcol8 = st.columns([1, 1, 1, 1, 1, 1, 1, 1, ])
+
+        st.divider()
+
+        hcol1.write('**Time [UTC]**')
+        hcol2.write('**Hash**')
+        hcol3.write('**From**')
+        hcol4.write('**To**')
+        hcol5.write('**TokenAmount**')
+        hcol6.write('**ValueUSD**')
+        hcol7.write('**Token**')
+        hcol8.write('**Ticker**')
+
+        for i in range(len(data)):
+            with st.container(border=True):
+                base_tx_url = APILink(address=None, tx_type=None).get_tx_url()
+                base_wallet_url = APILink(address=None, tx_type=None).get_wallet_url()
+
+                col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([1, 1, 1, 1, 1, 1, 1, 1, ])
+
+                col1.write(data[i]['Time'])
+
+                col2.link_button(
+                    f"{data[i]['Hash'][:5]}...{data[i]['Hash'][-5:]}",
+                    url=f"{base_tx_url}{data[i]['Hash']}",
+                    use_container_width=True
+                )
+                col3.link_button(
+                    f"{data[i]['From'][:5]}...{data[i]['From'][-5:]}",
+                    url=f"{base_wallet_url}{data[i]['From']}",
+                    use_container_width=True
+                )
+                col4.link_button(
+                    f"{data[i]['To'][:5]}...{data[i]['To'][-5:]}",
+                    url=f"{base_wallet_url}{data[i]['To']}",
+                    use_container_width=True
+                )
+
+                col5.write(str(int(data[i]['Token_Amount'])))
+                col6.write(str(int(data[i]['Value_USD'])))
+                col7.write(data[i]['Token'])
+                col8.write(data[i]['Symbol'])
