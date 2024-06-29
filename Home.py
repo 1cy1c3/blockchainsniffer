@@ -33,7 +33,6 @@ if ss.get("submit"):
         end_time = ss["end_time"]
         ss["start_block"] = scan.get_block_by_timestamp(start_time)
         ss["end_block"] = scan.get_block_by_timestamp(end_time)
-        count_tx_pre = count.text(f"Starting to sniff the Blockchain")
 
         with st.status('Searching the Blockchain'):
             func_data = scan.main(ss["wallet"], 0)
