@@ -1,16 +1,15 @@
-import time
-from typing import Any, Set, List, Dict, Optional
-
-import streamlit as st
-from datetime import datetime
 import requests
 import json
 import asyncio
 import aiohttp
-from tenacity import retry, stop_after_attempt, wait_exponential
 
-from src.scanurl import APILink
+import streamlit as st
 import src.defillama as defillama
+
+from typing import Any, Set, List, Dict, Optional
+from tenacity import retry, stop_after_attempt, wait_exponential
+from src.scanurl import APILink
+from datetime import datetime
 
 ss = st.session_state
 
@@ -54,12 +53,12 @@ def get_block_by_timestamp(timestamp: int) -> str:
     response = requests.get(url)
     data = response.json()
     if data['status'] != '1':
-        print('Anfrage fehlgeschlagen')
+        print("Error for request:", response.status_code)
         return "0"
     return data['result']
 
 
-def create_dataset(tx: dict, wallet: str) -> tuple[dict[Any], str]:
+def create_dataset(tx: dict, wallet: str, min_value: int) -> tuple[dict[Any], str]:
     dataset = {}
     ss["records"] += 1
     sender = tx["from"]
@@ -80,12 +79,11 @@ def create_dataset(tx: dict, wallet: str) -> tuple[dict[Any], str]:
 
         if token_price and token_amount:
             value_usd = round(token_amount * token_price, 0)
-            threshold_usd = ss["threshold_usd"]
 
-            if value_usd >= threshold_usd:
-                timest = timestamp_to_date(int(timestamp))
+            if value_usd >= min_value:
+
                 dataset["Hash"] = tx_hash
-                dataset["Time"] = timest
+                dataset["Time"] = timestamp_to_date(int(timestamp))
                 dataset["From"] = sender
                 dataset["To"] = to
                 dataset["Token_Amount"] = token_amount
@@ -97,13 +95,8 @@ def create_dataset(tx: dict, wallet: str) -> tuple[dict[Any], str]:
                 ss["counter"] += 1
                 print(f"counter: {ss['counter']} _________________________")
 
-                if sender != wallet.lower() and sender not in ss["addresses"]:
-                    wallet = sender
 
-                elif to != wallet.lower() and to not in ss["addresses"]:
-                    wallet = to
-
-                return dataset, wallet
+                return dataset
 
 
 @st.cache_data(show_spinner=False)
@@ -113,60 +106,12 @@ def timestamp_to_date(timestamp: int) -> str:
     return date.strftime('%Y/%m/%d %H:%M:%S')
 
 
-def _erc20_transactions(wallet: str, depth: int, visited: set = None) -> list[dict] | None:
-    if visited is None:
-        visited = set()
-
-    if depth > ss["depth"] or wallet in visited:
-        return None
-
-    visited.add(wallet)
-    dataset = []
-
-    max_tx = 10 * (ss["time_window"] / 86400)
-
-    # Buidl URL
-    url = APILink(address=wallet, tx_type="erc20").get_api_link()
-
-    # Send Request
-    response = requests.get(url)
-    response.raise_for_status()  # Raises a HTTPError if the response status is 4XX or 5XX
-    data = json.loads(response.text)
-
-    if data['status'] != '1':
-        print('Anfrage fehlgeschlagen')
-        return None
-
-    transactions = data['result']
-
-    if len(transactions) > max_tx:
-        print("Too much txs - EXC or phishing")
-        return None
-
-    for tx in transactions:
-        func_data = create_dataset(tx, wallet)
-        if func_data is not None:
-            dataset.append(func_data[0])
-            from_address = func_data[0]['From']
-            to_address = func_data[0]['To']
-
-            # Recursive call for the 'From' and 'to' address
-            child_dataset_from = erc20_transactions(from_address, depth + 1, visited)
-            child_dataset_to = erc20_transactions(to_address, depth + 1, visited)
-            if child_dataset_from:
-                dataset.extend(child_dataset_from)
-            if child_dataset_to:
-                dataset.extend(child_dataset_to)
-
-    return dataset
-
-
 async def fetch_data(url: str, session: aiohttp.ClientSession) -> Optional[Dict]:
     async with session.get(url) as response:
         response.raise_for_status()
         data = await response.json()
         if data['status'] != '1':
-            print('Anfrage fehlgeschlagen')
+            print("Error for request:", data['status'])
             return None
         return data
 
@@ -177,19 +122,19 @@ async def fetch_data(url: str, session: aiohttp.ClientSession) -> Optional[Dict]
         response.raise_for_status()
         data = await response.json()
         if data['status'] != '1':
-            print('Anfrage fehlgeschlagen')
+            print("Error for request:", data['status'])
             return None
         return data
 
 
 @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=1, max=10))
-async def erc20_transactions(wallet: str, depth: int, visited: Set[str] = None, sem: asyncio.Semaphore = None,
+async def erc20_transactions(wallet: str, depth: int, min_value: int, start_block: int, end_block: int, chain: str,
+                             visited: Set[str] = None, sem: asyncio.Semaphore = None,
                              session: aiohttp.ClientSession = None) -> List[Dict]:
-    time.sleep(.2)
     if visited is None:
         visited = set()
 
-    if depth > ss["depth"] or wallet in visited:
+    if depth < 0 or wallet in visited:
         return []
 
     visited.add(wallet)
@@ -198,7 +143,9 @@ async def erc20_transactions(wallet: str, depth: int, visited: Set[str] = None, 
     max_tx = 10 * (ss["time_window"] / 86400)
 
     # Build URL
-    url = APILink(address=wallet, tx_type="erc20").get_api_link()
+    url = APILink(
+        address=wallet, tx_type="erc20", start_block=start_block, end_block=end_block, chain=chain,
+                  ).get_api_link()
 
     async with sem:  # Ensure semaphore limits concurrency
         data = await fetch_data(url, session)
@@ -213,15 +160,21 @@ async def erc20_transactions(wallet: str, depth: int, visited: Set[str] = None, 
 
     tasks = []
     for tx in transactions:
-        func_data = create_dataset(tx, wallet)
+        func_data = create_dataset(tx, wallet, min_value)
         if func_data is not None:
-            dataset.append(func_data[0])
-            from_address = func_data[0]['From']
-            to_address = func_data[0]['To']
+            dataset.append(func_data)
+            from_address = func_data['From']
+            to_address = func_data['To']
 
             # Create tasks for recursive calls
-            tasks.append(erc20_transactions(from_address, depth + 1, visited, sem, session))
-            tasks.append(erc20_transactions(to_address, depth + 1, visited, sem, session))
+            if func_data['To'].lower() == wallet.lower():
+                tasks.append(erc20_transactions(
+                    from_address, depth - 1, min_value, start_block, end_block, chain, visited, sem, session)
+                )
+            else:
+                tasks.append(erc20_transactions(
+                    to_address, depth - 1, min_value, start_block, end_block, chain, visited, sem, session)
+                )
 
     # Await all tasks concurrently
     child_datasets = await asyncio.gather(*tasks)
@@ -241,12 +194,14 @@ def run_asyncio_task(task):
         return loop.run_until_complete(task)
 
 
-def main(wallet: str, depth: int):
-    sem = asyncio.Semaphore(10)  # Limit to 10 concurrent requests
+@st.cache_resource(show_spinner=False)
+def main(wallet: str, depth: int, min_value: int, start_block: int, end_block: int, chain: str) -> List[Dict]:
+    sem = asyncio.Semaphore(5)  # Limit to 5 concurrent requests
 
     async def async_main():
         async with aiohttp.ClientSession() as session:
-            result = await erc20_transactions(wallet, depth, sem=sem, session=session)
+            result = await erc20_transactions(wallet, depth, min_value, start_block, end_block, chain, sem=sem,
+                                              session=session)
             return result
 
     return run_asyncio_task(async_main())

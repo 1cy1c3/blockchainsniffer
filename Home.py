@@ -7,15 +7,12 @@ import src.gui as gui
 ss = st.session_state
 
 st.set_page_config(page_icon="🐽", layout="wide")
-
 st.header('Blockchain Sniffer', divider='grey')
-# Rest of the page
-st.sidebar.header("Blockchain Sniffer", divider='grey')
 
 utils.init_state_bsc()
+
 with st.sidebar:
     gui.load_sidebar_bsc()
-    # gui.load_button("ref_buttons")
 
 gui.load_footer()
 gui.load_header()
@@ -26,24 +23,19 @@ if ss.get("submit"):
     wallet = scan.check_wallet(ss["wallet"])
 
     if wallet:
-        dataset = []
-        address_list = []
-        count = st.empty()
         start_time = ss["start_time"]
         end_time = ss["end_time"]
         ss["start_block"] = scan.get_block_by_timestamp(start_time)
         ss["end_block"] = scan.get_block_by_timestamp(end_time)
 
         with st.status('Searching the Blockchain'):
-            func_data = scan.main(ss["wallet"], 0)
-        # count_tx_post = count.text(f"{ss['counter']} Records added")
+            func_data = scan.main(ss["wallet"], ss['depth'], ss['threshold_usd'], ss["start_block"], ss["end_block"], ss['chain'])
 
         if func_data:
             st.divider()
             gui.draw_network(func_data)
             st.divider()
             gui.load_fake_df(func_data)
-            # wallet_record = gui.load_record(ss["wallet_info"])
 
         else:
             st.write("No transactions for this parameters")
