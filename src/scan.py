@@ -140,7 +140,7 @@ async def erc20_transactions(wallet: str, depth: int, min_value: int, start_bloc
     visited.add(wallet)
     dataset = []
 
-    max_tx = 10 * (ss["time_window"] / 86400)
+    max_tx = 3 * (ss["time_window"] / 86400)
 
     # Build URL
     url = APILink(
@@ -159,6 +159,7 @@ async def erc20_transactions(wallet: str, depth: int, min_value: int, start_bloc
         return []
 
     tasks = []
+
     for tx in transactions:
         func_data = create_dataset(tx, wallet, min_value)
         if func_data is not None:
@@ -194,7 +195,7 @@ def run_asyncio_task(task):
         return loop.run_until_complete(task)
 
 
-@st.cache_resource(show_spinner=False)
+@st.cache_data(show_spinner=False)
 def main(wallet: str, depth: int, min_value: int, start_block: int, end_block: int, chain: str) -> List[Dict]:
     sem = asyncio.Semaphore(5)  # Limit to 5 concurrent requests
 

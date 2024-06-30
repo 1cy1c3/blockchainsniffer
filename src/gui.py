@@ -218,8 +218,8 @@ def _draw_network(data: set | list):
 
         # Create the network
         net = Network(notebook=True, neighborhood_highlight=True)
-        net.bgcolor = "#262730" # BG Color
-        net.font_color = "white" # BG Color
+        net.bgcolor = "#262730"
+        net.font_color = "white"
 
         net.options = {
             "interaction": {
@@ -245,7 +245,7 @@ def _draw_network(data: set | list):
         for address in volume_per_address:
             size = get_node_size(address)
             # Set colors based on conditions
-            if 10 <= int(node_degrees[address]):
+            if 3 * (ss["time_window"] / 86400) <= int(node_degrees[address]):
                 color = "yellow"
             elif address == ss["wallet"].lower():
                 color = "red"
@@ -318,17 +318,17 @@ def load_fake_df(data):
                 col1.write(data[i]['Time'])
 
                 col2.link_button(
-                    f"{data[i]['Hash'][:5]}...{data[i]['Hash'][-5:]}",
+                    f"{data[i]['Hash'][:6]}...{data[i]['Hash'][-5:]}",
                     url=f"{base_tx_url}{data[i]['Hash']}",
                     use_container_width=True
                 )
                 col3.link_button(
-                    f"{data[i]['From'][:5]}...{data[i]['From'][-5:]}",
+                    f"{data[i]['From'][:6]}...{data[i]['From'][-5:]}",
                     url=f"{base_wallet_url}{data[i]['From']}",
                     use_container_width=True
                 )
                 col4.link_button(
-                    f"{data[i]['To'][:5]}...{data[i]['To'][-5:]}",
+                    f"{data[i]['To'][:6]}...{data[i]['To'][-5:]}",
                     url=f"{base_wallet_url}{data[i]['To']}",
                     use_container_width=True
                 )
