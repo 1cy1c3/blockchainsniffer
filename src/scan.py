@@ -58,7 +58,7 @@ def get_block_by_timestamp(timestamp: int) -> str:
     return data['result']
 
 
-def create_dataset(tx: dict, wallet: str, min_value: int) -> tuple[dict[Any], str]:
+def create_dataset(tx: dict, min_value: int) -> tuple[dict[Any], str]:
     dataset = {}
     ss["records"] += 1
     sender = tx["from"]
@@ -95,7 +95,6 @@ def create_dataset(tx: dict, wallet: str, min_value: int) -> tuple[dict[Any], st
                 ss["counter"] += 1
                 print(f"counter: {ss['counter']} _________________________")
 
-
                 return dataset
 
 
@@ -104,16 +103,6 @@ def timestamp_to_date(timestamp: int) -> str:
     # Convert timestamp to date
     date = datetime.fromtimestamp(timestamp)
     return date.strftime('%Y/%m/%d %H:%M:%S')
-
-
-async def fetch_data(url: str, session: aiohttp.ClientSession) -> Optional[Dict]:
-    async with session.get(url) as response:
-        response.raise_for_status()
-        data = await response.json()
-        if data['status'] != '1':
-            print("Error for request:", data['status'])
-            return None
-        return data
 
 
 @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=1, max=10))
@@ -161,7 +150,7 @@ async def erc20_transactions(wallet: str, depth: int, min_value: int, start_bloc
     tasks = []
 
     for tx in transactions:
-        func_data = create_dataset(tx, wallet, min_value)
+        func_data = create_dataset(tx, min_value)
         if func_data is not None:
             dataset.append(func_data)
             from_address = func_data['From']

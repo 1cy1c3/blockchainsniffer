@@ -29,7 +29,9 @@ if ss.get("submit"):
         ss["end_block"] = scan.get_block_by_timestamp(end_time)
 
         with st.status('Searching the Blockchain'):
-            func_data = scan.main(ss["wallet"], ss['depth'], ss['threshold_usd'], ss["start_block"], ss["end_block"], ss['chain'])
+            func_data = scan.main(
+                ss["wallet"], ss['depth'], ss['threshold_usd'], ss["start_block"], ss["end_block"], ss['chain']
+            )
 
         if func_data:
             st.divider()

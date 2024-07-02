@@ -17,5 +17,5 @@ def get_historical_price(timestamp: str, contract_address: str) -> float:
     try:
         price = data["coins"][f"{chain}:{contract_address}"]["price"]
         return price
-    except KeyError as e:
+    except KeyError:
         return False

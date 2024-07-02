@@ -7,6 +7,7 @@ from streamlit_extras.mandatory_date_range import date_range_picker
 from streamlit_pandas_profiling import st_profile_report
 from pyvis.network import Network
 from src.scanurl import APILink
+from io import StringIO
 
 import streamlit.components.v1 as components
 import src.utils as utils
@@ -60,9 +61,9 @@ def load_ui_bsc():
 
         depth_input = rCol.number_input(
             label="Pick a depth",
-            min_value=0,
+            min_value=1,
             max_value=5,
-            value=0
+            value=1
         )
 
         start_datetime = datetime.datetime(start_date.year, start_date.month, start_date.day)
@@ -94,8 +95,7 @@ def load_ui_bsc():
 
 
 def draw_network(data: set | list, edge_threshold: int = 0):
-    data_str = json.dumps(data)
-    df = pd.read_json(data_str)
+    df = pd.read_json(StringIO(json.dumps(data)))
     G = nx.from_pandas_edgelist(df, source="From", target="To", edge_attr="Value_USD")
 
     if data:
@@ -119,7 +119,7 @@ def draw_network(data: set | list, edge_threshold: int = 0):
             return min_size + (volume_per_address[wallet] / max_volume) * (max_size - min_size)
 
         # Create the network
-        net = Network(notebook=True, neighborhood_highlight=True)
+        net = Network(notebook=True, neighborhood_highlight=True, cdn_resources='remote', directed=True)
         net.bgcolor = "#262730"  # Background color
         net.font_color = "white"  # Font color
 
@@ -189,102 +189,6 @@ def draw_network(data: set | list, edge_threshold: int = 0):
             components.html(html_content, height=615)
 
 
-def _draw_network(data: set | list):
-    data_str = json.dumps(data)
-    df = pd.read_json(data_str)
-    G = nx.from_pandas_edgelist(
-        df, source="From", target="To", edge_attr="Value_USD"
-    )
-
-    if data:
-        # Erstellen Sie die Knoten und Kanten aus den Transaktionsdaten
-        volume_per_address = {}
-        for tx in data:
-            from_address = tx["From"]
-            to_address = tx["To"]
-            value = tx["Value_USD"]
-
-            volume_per_address[from_address] = volume_per_address.get(from_address, 0) + value
-            volume_per_address[to_address] = volume_per_address.get(to_address, 0) + value
-
-        # Normalize node sizes for better visualization
-        max_volume = max(volume_per_address.values())
-        min_size = 10  # Minimum node size
-        max_size = 50  # Maximum node size
-
-        # Create a function to scale node sizes
-        def get_node_size(wallet):
-            return (min_size + volume_per_address[wallet] / max_volume) * (max_size - min_size)
-
-        # Create the network
-        net = Network(notebook=True, neighborhood_highlight=True)
-        net.bgcolor = "#262730"
-        net.font_color = "white"
-
-        net.options = {
-            "interaction": {
-                "dragNodes": True,
-                "dragView": True,
-                "hideEdgesOnDrag": False,
-                "hideEdgesOnZoom": False,
-                "hideNodesOnDrag": False,
-                "hover": True,
-                "hoverConnectedEdges": True,
-                "multiselect": True,
-                "navigationButtons": False,
-                "selectable": True,
-                "selectConnectedEdges": True,
-                "tooltipDelay": 300,
-                "zoomSpeed": .5,
-                "zoomView": True
-            }
-        }
-
-        # Add nodes to the network with sizes and colors
-        node_degrees = dict(G.degree())
-        for address in volume_per_address:
-            size = get_node_size(address)
-            # Set colors based on conditions
-            if 3 * (ss["time_window"] / 86400) <= int(node_degrees[address]):
-                color = "yellow"
-            elif address == ss["wallet"].lower():
-                color = "red"
-            else:
-                color = "lightblue"
-
-            net.add_node(address, color=color, size=size)
-
-        # Add edges (transactions) to the network
-        for tx in data:
-            from_address = tx["From"]
-            to_address = tx["To"]
-            net.add_edge(from_address, to_address)
-
-        if not os.path.exists("temp"):
-            os.makedirs("temp")
-
-        file_descriptor, temp_name = tempfile.mkstemp(suffix=".html", dir="temp")
-        os.close(file_descriptor)
-        net.show(temp_name)
-
-        # HTML-Datei öffnen und den Inhalt lesen
-        with open(temp_name, "r", encoding="utf-8") as file:
-            html_content = file.read()
-
-        # Löschen der temporären Datei
-        os.remove(temp_name)
-
-        # Geben Sie den HTML-Inhalt in Streamlit
-        rCol, lCol = st.columns([10, 1])
-
-        lCol.write(":red[Origin Wallet]")
-        lCol.write(":orange[High Activity]")
-        lCol.write(":blue[Unknown]")
-
-        with rCol:
-            st.components.v1.html(html_content, height=600)
-
-
 @st.cache_data(show_spinner=False)
 def load_record(data_json: list[dict]):
     data_csv = utils.json_to_csv(data_json)
@@ -293,7 +197,7 @@ def load_record(data_json: list[dict]):
     st_profile_report(data_report)
 
 
-def load_fake_df(data):
+def load_fake_df(data: list[dict]):
     if data:
         hcol1, hcol2, hcol3, hcol4, hcol5, hcol6, hcol7, hcol8 = st.columns([1, 1, 1, 1, 1, 1, 1, 1, ])
 
