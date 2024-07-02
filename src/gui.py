@@ -10,7 +10,7 @@ from src.scanurl import APILink
 from io import StringIO
 
 import streamlit.components.v1 as components
-import src.utils as utils
+import src.utils as ut
 import streamlit as st
 import networkx as nx
 import pandas as pd
@@ -76,15 +76,15 @@ def load_ui_bsc():
             step=1000
         )
 
-        submit_wallet = lCol.form_submit_button(label="Submit Wallet", on_click=utils.clear_ss())
+        submit_wallet = lCol.form_submit_button(label="Submit Wallet", on_click=ut.clear_ss())
         st.info('The bigger the depth and time window, the longer the calculation will take. '
                 'Increasing the USD threshold will improve this!', icon='ℹ️')
-        
+
         if submit_wallet:
             ss["chain"] = chain_input
             ss["threshold_usd"] = threshold_input
             ss["wallet"] = wallet_input
-            ss["addresses"] = [wallet_input]
+            ss["addresses"] = set()
             ss["depth"] = depth_input
             ss["start_time"] = int(start_datetime.timestamp())
             ss["end_time"] = int(end_datetime.timestamp())
@@ -149,6 +149,7 @@ def draw_network(data: set | list, edge_threshold: int = 0):
                 size = get_node_size(address)
                 # Set colors based on conditions
                 if 10 <= int(node_degrees[address]):
+                    ss['addresses'].add(address)
                     color = "yellow"
                 elif address == ss["wallet"].lower():
                     color = "red"
@@ -183,7 +184,7 @@ def draw_network(data: set | list, edge_threshold: int = 0):
 
         lCol.write(":red[Origin Wallet]")
         lCol.write(":orange[High Activity]")
-        lCol.write(":blue[Unknown]")
+        lCol.write(":blue[Normal Activity]")
 
         with rCol:
             components.html(html_content, height=615)
@@ -191,7 +192,7 @@ def draw_network(data: set | list, edge_threshold: int = 0):
 
 @st.cache_data(show_spinner=False)
 def load_record(data_json: list[dict]):
-    data_csv = utils.json_to_csv(data_json)
+    data_csv = ut.json_to_csv(data_json)
     data_report = data_csv.profile_report()
 
     st_profile_report(data_report)
@@ -213,6 +214,9 @@ def load_fake_df(data: list[dict]):
         hcol8.write('**Ticker**')
 
         for i in range(len(data)):
+            prefixTo, suffixTo = ut.get_color(data[i]['To'])
+            prefixFrom, suffixFrom = ut.get_color(data[i]['From'])
+
             with st.container(border=True):
                 base_tx_url = APILink(address=None, tx_type=None).get_tx_url()
                 base_wallet_url = APILink(address=None, tx_type=None).get_wallet_url()
@@ -227,12 +231,12 @@ def load_fake_df(data: list[dict]):
                     use_container_width=True
                 )
                 col3.link_button(
-                    f"{data[i]['From'][:6]}...{data[i]['From'][-5:]}",
+                    f"{prefixFrom}{data[i]['From'][:6]}...{data[i]['From'][-5:]}{suffixFrom}",
                     url=f"{base_wallet_url}{data[i]['From']}",
                     use_container_width=True
                 )
                 col4.link_button(
-                    f"{data[i]['To'][:6]}...{data[i]['To'][-5:]}",
+                    f"{prefixTo}{data[i]['To'][:6]}...{data[i]['To'][-5:]}{suffixTo}",
                     url=f"{base_wallet_url}{data[i]['To']}",
                     use_container_width=True
                 )

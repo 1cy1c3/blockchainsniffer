@@ -56,3 +56,17 @@ def clear_ss():
 
 def json_to_csv(data_json: list[dict]) -> pd.DataFrame:
     return pd.DataFrame(data_json)
+
+
+def get_color(address: str) -> tuple[str, str]:
+    if address.lower() == ss['wallet'].lower():
+        prefix = ':red['
+        suffix = ']'
+    elif address in ss['addresses']:
+        prefix = ':orange['
+        suffix = ']'
+    else:
+        prefix = ':blue['
+        suffix = ']'
+    return prefix, suffix
+
