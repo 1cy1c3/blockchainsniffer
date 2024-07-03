@@ -15,9 +15,9 @@ ss = st.session_state
 
 
 @st.cache_data(show_spinner=False)
-def is_contract(address: str) -> bool:
+def is_contract(address: str, chain: str) -> bool:
     # Build URL
-    url = APILink(address=address, tx_type=None).check_for_contract()
+    url = APILink(address=address, tx_type=None, chain=chain).check_for_contract()
 
     # Send Request
     response = requests.get(url)
@@ -48,17 +48,17 @@ def check_wallet(address: str) -> bool:
 
 
 @st.cache_data(show_spinner=False)
-def get_block_by_timestamp(timestamp: int) -> str:
-    url = APILink(address=None, tx_type=None).get_block_number(timestamp)
+def get_block_by_timestamp(timestamp: int, chain: str) -> str:
+    url = APILink(address=None, tx_type=None, chain=chain).get_block_number(timestamp)
     response = requests.get(url)
     data = response.json()
-    if data['status'] != '1':
-        print("Error for request:", response.status_code)
+
+    if data['message'] != 'OK':
         return "0"
     return data['result']
 
 
-def create_dataset(tx: dict, min_value: int) -> dict[str, str | int | Any]:
+def create_dataset(tx: dict, min_value: int, chain: str) -> dict[str, str | int | Any]:
     dataset = {}
     ss["records"] += 1
     sender = tx["from"]
@@ -70,16 +70,16 @@ def create_dataset(tx: dict, min_value: int) -> dict[str, str | int | Any]:
     timestamp = tx["timeStamp"]
     value_raw = tx["value"]
 
-    if (not is_contract(sender) and not is_contract(to)
+    if (not is_contract(sender, chain) and not is_contract(to, chain)
             and to != st.secrets["null"] and sender != st.secrets["null"]
             and tx_hash not in ss["tx_hashes"]):
 
-        token_price = defillama.get_historical_price(tx["timeStamp"], tx["contractAddress"])
+        token_price = defillama.get_historical_price(tx["timeStamp"], tx["contractAddress"], chain)
         token_amount = int(value_raw) * 10 ** - int(decimals)
 
         if token_price and token_amount:
             value_usd = round(token_amount * token_price, 0)
-
+            print(value_usd)
             if value_usd >= min_value:
 
                 dataset["Hash"] = tx_hash
@@ -129,7 +129,7 @@ async def erc20_transactions(wallet: str, depth: int, min_value: int, start_bloc
     visited.add(wallet)
     dataset = []
 
-    max_tx = 3 * (ss["time_window"] / 86400)
+    max_tx = 10 * (ss["time_window"] / 86400)
 
     # Build URL
     url = APILink(
@@ -138,7 +138,7 @@ async def erc20_transactions(wallet: str, depth: int, min_value: int, start_bloc
 
     async with sem:  # Ensure semaphore limits concurrency
         data = await fetch_data(url, session)
-        if data is None:
+        if data['message'] == 'NOTOK':
             return []
 
     transactions = data['result']
@@ -150,7 +150,7 @@ async def erc20_transactions(wallet: str, depth: int, min_value: int, start_bloc
     tasks = []
 
     for tx in transactions:
-        func_data = create_dataset(tx, min_value)
+        func_data = create_dataset(tx, min_value, chain)
         if func_data is not None:
             dataset.append(func_data)
             from_address = func_data['From']
@@ -178,7 +178,7 @@ async def erc20_transactions(wallet: str, depth: int, min_value: int, start_bloc
 def run_asyncio_task(task):
     try:
         return asyncio.run(task)
-    except RuntimeError as e:
+    except RuntimeError:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         return loop.run_until_complete(task)

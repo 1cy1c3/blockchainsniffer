@@ -27,8 +27,8 @@ if ss.get("submit"):
     if wallet:
         start_time = ss["start_time"]
         end_time = ss["end_time"]
-        ss["start_block"] = scan.get_block_by_timestamp(start_time)
-        ss["end_block"] = scan.get_block_by_timestamp(end_time)
+        ss["start_block"] = scan.get_block_by_timestamp(start_time, ss['chain'])
+        ss["end_block"] = scan.get_block_by_timestamp(end_time, ss['chain'])
 
         with lCol.status('Searching the Blockchain'):
             func_data = scan.main(
@@ -42,8 +42,8 @@ if ss.get("submit"):
             gui.load_fake_df(func_data)
 
         else:
-            st.write("No transactions for this parameters")
+            lCol.warning("**No transactions for this parameters**")
         ss["submit"] = False
 
     else:
-        st.write("Wallet not found! Or has no known transactions for this time window")
+        lCol.warning("**Wallet not found!**")
