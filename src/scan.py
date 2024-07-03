@@ -79,7 +79,6 @@ def create_dataset(tx: dict, min_value: int, chain: str) -> dict[str, str | int 
 
         if token_price and token_amount:
             value_usd = round(token_amount * token_price, 0)
-            print(value_usd)
             if value_usd >= min_value:
 
                 dataset["Hash"] = tx_hash
