@@ -9,12 +9,6 @@ ss = st.session_state
 st.set_page_config(page_icon="🐽", layout="wide")
 lCol, rCol = st.columns([1, 1])
 lCol.header('Blockchain Sniffer', divider='grey')
-st.markdown(
-    """
-    
-    """,
-    unsafe_allow_html=True,
-)
 
 
 utils.init_state_bsc()
@@ -23,9 +17,9 @@ with st.sidebar:
     gui.load_ui()
     gui.load_sidebar_bsc()
 
-gui.load_footer()
-gui.load_header()
-
+gui.load_css('footer')
+gui.load_css('header')
+gui.load_css('sidebar')
 
 if ss.get("submit"):
     wallet = scan.check_wallet(ss["wallet"])

@@ -27,22 +27,8 @@ def load_sidebar_bsc():
 
 
 @st.cache_data(show_spinner=False)
-def load_header():
-    with open("css/header.css") as f:
-        header_css = f.read()
-    st.markdown(header_css, unsafe_allow_html=True)
-
-
-@st.cache_data(show_spinner=False)
-def load_footer():
-    with open("css/footer.css") as f:
-        footer_css = f.read()
-    st.markdown(footer_css, unsafe_allow_html=True)
-
-
-@st.cache_data(show_spinner=False)
-def load_sidebar_size():
-    with open("css/sidebar.css") as f:
+def load_css(file: str):
+    with open(f"css/{file}.css") as f:
         sidebar_css = f.read()
     st.markdown(sidebar_css, unsafe_allow_html=True)
 
@@ -76,14 +62,15 @@ def load_ui():
         start_datetime = datetime.datetime(start_date.year, start_date.month, start_date.day)
         end_datetime = datetime.datetime(end_date.year, end_date.month, end_date.day)
 
-        threshold_input = rCol.slider(
+        threshold_input = lCol.number_input(
             label="Select Amount USD to filter for",
             min_value=0,
-            max_value=100000,
-            step=1000
+            max_value=2147483647,
+            value=0,
+            step=500
         )
 
-        submit_wallet = lCol.form_submit_button(label="Submit Wallet", on_click=ut.clear_ss())
+        submit_wallet = st.form_submit_button(label="Submit Wallet", on_click=ut.clear_ss(), use_container_width=True)
         st.info('The bigger the depth and time window, the longer the calculation will take. '
                 'Increasing the USD threshold will improve this!', icon='ℹ️')
 
@@ -101,7 +88,7 @@ def load_ui():
             ss["submit"] = True
 
 
-def draw_network(data: set | list, edge_threshold: int = 0):
+def draw_network(data: set | list):
     df = pd.read_json(StringIO(json.dumps(data)))
     G = nx.from_pandas_edgelist(df, source="From", target="To", edge_attr="Value_USD")
 
@@ -152,18 +139,17 @@ def draw_network(data: set | list, edge_threshold: int = 0):
         # Add nodes to the network with sizes and colors
         node_degrees = dict(G.degree())
         for address, degree in node_degrees.items():
-            if degree > edge_threshold:
-                size = get_node_size(address)
-                # Set colors based on conditions
-                if 10 <= int(node_degrees[address]):
-                    ss['addresses'].add(address)
-                    color = "yellow"
-                elif address == ss["wallet"].lower():
-                    color = "red"
-                else:
-                    color = "lightblue"
+            size = get_node_size(address)
+            # Set colors based on conditions
+            if 10 <= int(node_degrees[address]):
+                ss['addresses'].add(address)
+                color = "yellow"
+            elif address == ss["wallet"].lower():
+                color = "red"
+            else:
+                color = "lightblue"
 
-                net.add_node(address, color=color, size=size)
+            net.add_node(address, color=color, size=size)
 
         # Add edges (transactions) to the network
         for tx in data:
