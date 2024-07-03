@@ -40,7 +40,14 @@ def load_footer():
     st.markdown(footer_css, unsafe_allow_html=True)
 
 
-def load_ui_bsc():
+@st.cache_data(show_spinner=False)
+def load_sidebar_size():
+    with open("css/sidebar.css") as f:
+        sidebar_css = f.read()
+    st.markdown(sidebar_css, unsafe_allow_html=True)
+
+
+def load_ui():
     with st.form("user_input"):
         lCol, rCol = st.columns([1, 1])
         wallet_input = lCol.text_input(
@@ -50,7 +57,7 @@ def load_ui_bsc():
 
         chain_input = lCol.selectbox(
             label="Pick a Chain",
-            options=("Ethereum", "Arbitrum", "Polygon", "Optimism", "Base")
+            options=("Ethereum", "Arbitrum", "Polygon", "Optimism", "Base", "Scroll")
         )
 
         with rCol:

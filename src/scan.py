@@ -58,7 +58,7 @@ def get_block_by_timestamp(timestamp: int) -> str:
     return data['result']
 
 
-def create_dataset(tx: dict, min_value: int) -> tuple[dict[Any], str]:
+def create_dataset(tx: dict, min_value: int) -> dict[str, str | int | Any]:
     dataset = {}
     ss["records"] += 1
     sender = tx["from"]
@@ -123,7 +123,7 @@ async def erc20_transactions(wallet: str, depth: int, min_value: int, start_bloc
     if visited is None:
         visited = set()
 
-    if depth < 0 or wallet in visited:
+    if depth < 1 or wallet in visited:
         return []
 
     visited.add(wallet)

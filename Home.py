@@ -7,16 +7,24 @@ import src.gui as gui
 ss = st.session_state
 
 st.set_page_config(page_icon="🐽", layout="wide")
-st.header('Blockchain Sniffer', divider='grey')
+lCol, rCol = st.columns([1, 1])
+lCol.header('Blockchain Sniffer', divider='grey')
+st.markdown(
+    """
+    
+    """,
+    unsafe_allow_html=True,
+)
+
 
 utils.init_state_bsc()
 
 with st.sidebar:
+    gui.load_ui()
     gui.load_sidebar_bsc()
 
 gui.load_footer()
 gui.load_header()
-gui.load_ui_bsc()
 
 
 if ss.get("submit"):
@@ -28,7 +36,7 @@ if ss.get("submit"):
         ss["start_block"] = scan.get_block_by_timestamp(start_time)
         ss["end_block"] = scan.get_block_by_timestamp(end_time)
 
-        with st.status('Searching the Blockchain'):
+        with lCol.status('Searching the Blockchain'):
             func_data = scan.main(
                 ss["wallet"], ss['depth'], ss['threshold_usd'], ss["start_block"], ss["end_block"], ss['chain']
             )

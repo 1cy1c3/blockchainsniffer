@@ -25,6 +25,8 @@ class APILink:
             self.url = "https://api.polygonscan.com/api?"
         elif self.chain == "Base":
             self.url = "https://api.basescan.org/api?"
+        elif self.chain == "Scroll":
+            self.url = "https://api.scrollscan.com/api?"
         return self.url
 
     def get_attribute(self, tx_type):
@@ -47,6 +49,8 @@ class APILink:
             self.key = st.secrets["polyscan_api_key"]
         elif self.chain == "Base":
             self.key = st.secrets["basescan_api_key"]
+        elif self.chain == "Scroll":
+            self.key = st.secrets["scrollscan_api_key"]
         return self.key
 
     def get_api_link(self) -> str:
@@ -95,6 +99,8 @@ class APILink:
             return "https://polygonscan.io/address/"
         elif self.chain == "Base":
             return "https://basescan.io/address/"
+        elif self.chain == "Scroll":
+            return "https://scrollscan.com/address/"
 
     def get_tx_url(self) -> str:
         if self.chain == "Ethereum":
@@ -106,7 +112,9 @@ class APILink:
         elif self.chain == "Polygon":
             return "https://polygonscan.io/tx/"
         elif self.chain == "Base":
-            return "https://basescan.io/address/"
+            return "https://basescan.io/tx/"
+        elif self.chain == "Scroll":
+            return "https://scrollscan.com/tx/"
 
     def get_int_tx(self):
         api_url = (
