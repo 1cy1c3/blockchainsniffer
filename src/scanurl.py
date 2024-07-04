@@ -4,15 +4,15 @@ ss = st.session_state
 
 
 class APILink:
-    def __init__(self, address, tx_type, chain=None, start_block=None, end_block=None):
-        self.chain = self.chain = chain if chain else ss["chain"]
+    def __init__(self, address, tx_type, chain=None, start_block=None, end_block=None, key=None):
+        self.chain = chain if chain else ss["chain"]
         self.api_check = "module=account&action=txlist&address="
         self.address = address
         self.start_block = start_block if start_block else ss["start_block"]
         self.end_block = end_block if end_block else ss["end_block"]
-        self.url = self.get_url()  # Ruft die Methode get_url auf, um self.url zu setzen
-        self.attribute = self.get_attribute(tx_type)  # Ruft die Methode get_attribute auf, um self.attribute zu setzen
-        self.key = self.get_key()  # Ruft die Methode get_key auf, um self.key zu setzen
+        self.url = self.get_url()
+        self.attribute = self.get_attribute(tx_type)
+        self.key = self.get_key() if key is None else key
 
     def get_url(self):
         if self.chain == "Ethereum":
@@ -81,9 +81,9 @@ class APILink:
         )
         return api_url
 
-    def get_block_reward(self, blocknumber: int):
+    def get_block_reward(self, blockNumber: int):
         api_url = (
-                self.url + f"module=block&action=getblockreward&blockno={blocknumber}"
+                self.url + f"module=block&action=getblockreward&blockno={blockNumber}"
                            f"&closest=before&apikey={self.key}"
         )
         return api_url

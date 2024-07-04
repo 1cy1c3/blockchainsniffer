@@ -113,7 +113,7 @@ def draw_network(data: set | list):
             return min_size + (volume_per_address[wallet] / max_volume) * (max_size - min_size)
 
         # Create the network
-        net = Network(notebook=True, neighborhood_highlight=True, cdn_resources='remote', directed=True)
+        net = Network(notebook=True, neighborhood_highlight=True, cdn_resources='remote', directed=True, layout=True)   # select_menu=True,
         net.bgcolor = "#262730"  # Background color
         net.font_color = "white"  # Font color
 
@@ -126,7 +126,7 @@ def draw_network(data: set | list):
                 "hideNodesOnDrag": False,
                 "hover": True,
                 "hoverConnectedEdges": True,
-                "multiselect": True,
+                "multiselect": False,
                 "navigationButtons": False,
                 "selectable": True,
                 "selectConnectedEdges": True,
@@ -141,11 +141,11 @@ def draw_network(data: set | list):
         for address, degree in node_degrees.items():
             size = get_node_size(address)
             # Set colors based on conditions
-            if 10 <= int(node_degrees[address]):
+            if address == ss["wallet"].lower():
+                color = "red"
+            elif 10 <= int(node_degrees[address]):
                 ss['addresses'].add(address)
                 color = "yellow"
-            elif address == ss["wallet"].lower():
-                color = "red"
             else:
                 color = "lightblue"
 
@@ -187,12 +187,12 @@ def draw_network(data: set | list):
 def load_record(data_json: list[dict]):
     data_csv = ut.json_to_csv(data_json)
     data_report = data_csv.profile_report()
-
     st_profile_report(data_report)
 
 
 def load_fake_df(data: list[dict]):
     if data:
+
         hcol1, hcol2, hcol3, hcol4, hcol5, hcol6, hcol7, hcol8 = st.columns([1, 1, 1, 1, 1, 1, 1, 1, ])
 
         st.divider()
