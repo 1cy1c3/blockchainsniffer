@@ -5,6 +5,8 @@ import datetime
 
 from streamlit_extras.mandatory_date_range import date_range_picker
 from streamlit_pandas_profiling import st_profile_report
+from networkx.algorithms.cycles import simple_cycles
+from networkx.algorithms.community import louvain_communities
 from pyvis.network import Network
 from src.scanurl import APILink
 from io import StringIO
@@ -113,7 +115,9 @@ def draw_network(data: set | list):
             return min_size + (volume_per_address[wallet] / max_volume) * (max_size - min_size)
 
         # Create the network
-        net = Network(notebook=True, neighborhood_highlight=True, cdn_resources='remote', directed=True, layout=True)   # select_menu=True,
+        net = Network(notebook=True, neighborhood_highlight=True, cdn_resources='remote', directed=True,
+                      select_menu=True, layout=True)
+
         net.bgcolor = "#262730"  # Background color
         net.font_color = "white"  # Font color
 
@@ -182,6 +186,21 @@ def draw_network(data: set | list):
         with rCol:
             components.html(html_content, height=615)
 
+        st.divider()
+        _lCol, _rCol = st.columns([1, 1])
+
+        cycles = list(simple_cycles(G))
+
+        communities = list(louvain_communities(G))
+        communities = [list(item) for item in communities]
+
+        with _lCol.expander('Detected Cycles'):
+            for item in cycles:
+                st.dataframe(item, use_container_width=True)
+        with _rCol.expander("Detected cluster"):
+            for item in communities:
+                st.dataframe(item, use_container_width=True)
+
 
 @st.cache_data(show_spinner=False)
 def load_record(data_json: list[dict]):
@@ -192,7 +211,6 @@ def load_record(data_json: list[dict]):
 
 def load_fake_df(data: list[dict]):
     if data:
-
         hcol1, hcol2, hcol3, hcol4, hcol5, hcol6, hcol7, hcol8 = st.columns([1, 1, 1, 1, 1, 1, 1, 1, ])
 
         st.divider()
