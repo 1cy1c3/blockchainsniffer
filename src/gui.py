@@ -200,6 +200,7 @@ def draw_network(data: set | list, height: int = 615, select_menu: bool = False,
 
 
 def load_df_analysis(G, data):
+    st.info('Poorly loaded diagrams can be reloaded with pressing the "r" key and submitting wallet again.', icon='ℹ️')
     cycles = list(simple_cycles(G))
 
     communities = list(louvain_communities(G))
