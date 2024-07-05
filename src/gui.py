@@ -209,7 +209,7 @@ def load_df_analysis(G, data):
     with st.expander("Detected Cluster"):
         for i, item in enumerate(communities):
             st.header(f'Cluster {i + 1}')
-            _lCol, _rCol = st.columns([1, 1])
+            _lCol, _, _rCol = st.columns([.75, .25, 1])
             ss['addresses'] = set(item)
             dfCom = pd.DataFrame(item, columns=['wallet'])
             _lCol.dataframe(dfCom, use_container_width=True, hide_index=True)
