@@ -90,7 +90,7 @@ def load_ui():
             ss["submit"] = True
 
 
-def draw_network(data: set | list):
+def draw_network(data: set | list, height: int = 615, select_menu: bool = False, legend: bool = True):
     df = pd.read_json(StringIO(json.dumps(data)))
     G = nx.from_pandas_edgelist(df, source="From", target="To", edge_attr="Value_USD")
 
@@ -114,9 +114,13 @@ def draw_network(data: set | list):
         def get_node_size(wallet):
             return min_size + (volume_per_address[wallet] / max_volume) * (max_size - min_size)
 
-        # Create the network
-        net = Network(notebook=True, neighborhood_highlight=True, cdn_resources='remote', directed=True,
-                      select_menu=True, layout=True)
+        if height != 615:
+            # Create the network
+            net = Network(notebook=True, neighborhood_highlight=True, cdn_resources='remote', directed=True,
+                          select_menu=select_menu, layout=True, height=500)
+        else:
+            net = Network(notebook=True, neighborhood_highlight=True, cdn_resources='remote', directed=True,
+                          select_menu=select_menu, layout=True)
 
         net.bgcolor = "#262730"  # Background color
         net.font_color = "white"  # Font color
@@ -143,17 +147,18 @@ def draw_network(data: set | list):
         # Add nodes to the network with sizes and colors
         node_degrees = dict(G.degree())
         for address, degree in node_degrees.items():
-            size = get_node_size(address)
-            # Set colors based on conditions
-            if address == ss["wallet"].lower():
-                color = "red"
-            elif 10 <= int(node_degrees[address]):
-                ss['addresses'].add(address)
-                color = "yellow"
-            else:
-                color = "lightblue"
+            if address.lower() in ss['addresses']:
+                size = get_node_size(address)
+                # Set colors based on conditions
+                if address == ss["wallet"].lower():
+                    color = "red"
+                elif 10 <= int(node_degrees[address]):
+                    ss['addresses'].add(address)
+                    color = "yellow"
+                else:
+                    color = "lightblue"
 
-            net.add_node(address, color=color, size=size)
+                net.add_node(address, color=color, size=size)
 
         # Add edges (transactions) to the network
         for tx in data:
@@ -177,40 +182,54 @@ def draw_network(data: set | list):
         os.remove(temp_name)
 
         # Output the HTML content in Streamlit
-        rCol, lCol = st.columns([10, 1])
+        if legend:
+            rCol, lCol = st.columns([10, 1])
 
-        lCol.write(":red[Origin Wallet]")
-        lCol.write(":orange[High Activity]")
-        lCol.write(":blue[Normal Activity]")
+            lCol.write(":red[Origin Wallet]")
+            lCol.write(":orange[High Activity]")
+            lCol.write(":blue[Normal Activity]")
 
-        with rCol:
-            components.html(html_content, height=685)
+            with rCol:
+                components.html(html_content, height=height)
+
+        else:
+            components.html(html_content, height=300)
+
         return G
     else:
         return None
 
 
-def load_df_analysis(G):
-    _lCol, _rCol = st.columns([1, 1])
-
+def load_df_analysis(G, data):
     cycles = list(simple_cycles(G))
 
     communities = list(louvain_communities(G))
     communities = [list(item) for item in communities]
 
-    with _lCol.expander('Detected Cycles'):
+    with st.expander('Detected Cycles'):
         st.empty()
         for i, item in enumerate(cycles):
+            _lCol, _rCol = st.columns([1, 1])
+
+            ss['addresses'] = set(item)
             dfCyc = pd.DataFrame(item, columns=[f'cycle {i + 1}'])
-            st.dataframe(dfCyc, use_container_width=True, hide_index=True)
+            _lCol.dataframe(dfCyc, use_container_width=True, hide_index=True)
+            with _rCol:
+                draw_network(data, select_menu=False, height=300, legend=False)
+            if i < len(cycles) - 1:
+                st.divider()
 
-
-    with _rCol.expander("Detected cluster"):
+    with st.expander("Detected Cluster"):
         st.empty()
         for i, item in enumerate(communities):
+            _lCol, _rCol = st.columns([1, 1])
+            ss['addresses'] = set(item)
             dfCom = pd.DataFrame(item, columns=[f'cluster {i + 1}'])
-            st.dataframe(dfCom, use_container_width=True, hide_index=True)
-
+            _lCol.dataframe(dfCom, use_container_width=True, hide_index=True)
+            with _rCol:
+                draw_network(data, select_menu=False, height=300, legend=False)
+            if i < len(communities) - 1:
+                st.divider()
 
 
 @st.cache_data(show_spinner=False)

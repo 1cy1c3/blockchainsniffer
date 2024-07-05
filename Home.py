@@ -36,10 +36,13 @@ if ss.get("submit"):
             )
 
         if func_data:
+            ss['addresses'] = set([item['From'] for item in func_data])
+            ss['addresses'].update(set([item['To'] for item in func_data]))
+
             st.divider()
             network_data = gui.draw_network(func_data)
             st.divider()
-            gui.load_df_analysis(network_data)
+            gui.load_df_analysis(network_data, func_data)
             st.divider()
             gui.load_fake_df(func_data)
 
