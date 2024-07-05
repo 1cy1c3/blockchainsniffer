@@ -37,24 +37,23 @@ def load_css(file: str):
 
 def load_ui():
     with st.form("user_input"):
-        lCol, rCol = st.columns([1, 1])
-        wallet_input = lCol.text_input(
+
+        wallet_input = st.text_input(
             label="Enter any Ethereum Address",
             value="0x9E29A34dFd3Cb99798E8D88515FEe01f2e4cD5a8"
         )
 
-        chain_input = lCol.selectbox(
+        chain_input = st.selectbox(
             label="Pick a Chain",
             options=("Ethereum", "Arbitrum", "Polygon", "Optimism", "Base", "Scroll")
         )
 
-        with rCol:
-            start_date, end_date = date_range_picker(
-                title="Pick a date range",
-                max_date=datetime.datetime.today()
-            )
+        start_date, end_date = date_range_picker(
+            title="Pick a date range",
+            max_date=datetime.datetime.today()
+        )
 
-        depth_input = rCol.number_input(
+        depth_input = st.number_input(
             label="Pick a depth",
             min_value=1,
             max_value=5,
@@ -64,7 +63,7 @@ def load_ui():
         start_datetime = datetime.datetime(start_date.year, start_date.month, start_date.day)
         end_datetime = datetime.datetime(end_date.year, end_date.month, end_date.day)
 
-        threshold_input = lCol.number_input(
+        threshold_input = st.number_input(
             label="Select Amount USD to filter for",
             min_value=0,
             max_value=2147483647,
@@ -117,7 +116,7 @@ def draw_network(data: set | list, height: int = 615, select_menu: bool = False,
         if height != 615:
             # Create the network
             net = Network(notebook=True, neighborhood_highlight=True, cdn_resources='remote', directed=True,
-                          select_menu=select_menu, layout=True, height=500)
+                          select_menu=select_menu, layout=True, height=300)
         else:
             net = Network(notebook=True, neighborhood_highlight=True, cdn_resources='remote', directed=True,
                           select_menu=select_menu, layout=True)
@@ -193,7 +192,7 @@ def draw_network(data: set | list, height: int = 615, select_menu: bool = False,
                 components.html(html_content, height=height)
 
         else:
-            components.html(html_content, height=300)
+            components.html(html_content, height=340)
 
         return G
     else:
@@ -206,6 +205,18 @@ def load_df_analysis(G, data):
     communities = list(louvain_communities(G))
     communities = [list(item) for item in communities]
 
+    with st.expander("Detected Cluster"):
+        st.empty()
+        for i, item in enumerate(communities):
+            _lCol, _rCol = st.columns([1, 1])
+            ss['addresses'] = set(item)
+            dfCom = pd.DataFrame(item, columns=[f'cluster {i + 1}'])
+            _lCol.dataframe(dfCom, use_container_width=True, hide_index=True)
+            with _rCol:
+                draw_network(data, select_menu=False, height=300, legend=False)
+            if i < len(communities) - 1:
+                st.divider()
+
     with st.expander('Detected Cycles'):
         st.empty()
         for i, item in enumerate(cycles):
@@ -217,18 +228,6 @@ def load_df_analysis(G, data):
             with _rCol:
                 draw_network(data, select_menu=False, height=300, legend=False)
             if i < len(cycles) - 1:
-                st.divider()
-
-    with st.expander("Detected Cluster"):
-        st.empty()
-        for i, item in enumerate(communities):
-            _lCol, _rCol = st.columns([1, 1])
-            ss['addresses'] = set(item)
-            dfCom = pd.DataFrame(item, columns=[f'cluster {i + 1}'])
-            _lCol.dataframe(dfCom, use_container_width=True, hide_index=True)
-            with _rCol:
-                draw_network(data, select_menu=False, height=300, legend=False)
-            if i < len(communities) - 1:
                 st.divider()
 
 
