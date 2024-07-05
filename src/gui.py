@@ -192,7 +192,7 @@ def draw_network(data: set | list, height: int = 615, select_menu: bool = False,
                 components.html(html_content, height=height)
 
         else:
-            components.html(html_content, height=340)
+            components.html(html_content, height=400)
 
         return G
     else:
@@ -206,11 +206,11 @@ def load_df_analysis(G, data):
     communities = [list(item) for item in communities]
 
     with st.expander("Detected Cluster"):
-        st.empty()
         for i, item in enumerate(communities):
+            st.header(f'Cluster {i + 1}')
             _lCol, _rCol = st.columns([1, 1])
             ss['addresses'] = set(item)
-            dfCom = pd.DataFrame(item, columns=[f'cluster {i + 1}'])
+            dfCom = pd.DataFrame(item, columns=['wallet'])
             _lCol.dataframe(dfCom, use_container_width=True, hide_index=True)
             with _rCol:
                 draw_network(data, select_menu=False, height=300, legend=False)
@@ -218,12 +218,12 @@ def load_df_analysis(G, data):
                 st.divider()
 
     with st.expander('Detected Cycles'):
-        st.empty()
         for i, item in enumerate(cycles):
+            st.write(f'cycle {i + 1}')
             _lCol, _rCol = st.columns([1, 1])
 
             ss['addresses'] = set(item)
-            dfCyc = pd.DataFrame(item, columns=[f'cycle {i + 1}'])
+            dfCyc = pd.DataFrame(item, columns=['wallet'])
             _lCol.dataframe(dfCyc, use_container_width=True, hide_index=True)
             with _rCol:
                 draw_network(data, select_menu=False, height=300, legend=False)
