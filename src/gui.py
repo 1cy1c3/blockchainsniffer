@@ -167,6 +167,7 @@ def draw_network(data: set | list):
 
         file_descriptor, temp_name = tempfile.mkstemp(suffix=".html", dir="temp")
         os.close(file_descriptor)
+        net.show(temp_name)
 
         # HTML file open and read the content
         with open(temp_name, "r", encoding="utf-8") as file:
