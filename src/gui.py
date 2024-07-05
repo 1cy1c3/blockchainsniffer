@@ -192,7 +192,7 @@ def draw_network(data: set | list, height: int = 615, select_menu: bool = False,
                 components.html(html_content, height=height)
 
         else:
-            components.html(html_content, height=400)
+            components.html(html_content, height=435)
 
         return G
     else:
