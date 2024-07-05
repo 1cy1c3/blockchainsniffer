@@ -167,7 +167,6 @@ def draw_network(data: set | list):
 
         file_descriptor, temp_name = tempfile.mkstemp(suffix=".html", dir="temp")
         os.close(file_descriptor)
-        net.show(temp_name)
 
         # HTML file open and read the content
         with open(temp_name, "r", encoding="utf-8") as file:
@@ -184,22 +183,33 @@ def draw_network(data: set | list):
         lCol.write(":blue[Normal Activity]")
 
         with rCol:
-            components.html(html_content, height=615)
+            components.html(html_content, height=685)
+        return G
+    else:
+        return None
 
-        st.divider()
-        _lCol, _rCol = st.columns([1, 1])
 
-        cycles = list(simple_cycles(G))
+def load_df_analysis(G):
+    _lCol, _rCol = st.columns([1, 1])
 
-        communities = list(louvain_communities(G))
-        communities = [list(item) for item in communities]
+    cycles = list(simple_cycles(G))
 
-        with _lCol.expander('Detected Cycles'):
-            for item in cycles:
-                st.dataframe(item, use_container_width=True)
-        with _rCol.expander("Detected cluster"):
-            for item in communities:
-                st.dataframe(item, use_container_width=True)
+    communities = list(louvain_communities(G))
+    communities = [list(item) for item in communities]
+
+    with _lCol.expander('Detected Cycles'):
+        st.empty()
+        for i, item in enumerate(cycles):
+            dfCyc = pd.DataFrame(item, columns=[f'cycle {i + 1}'])
+            st.dataframe(dfCyc, use_container_width=True, hide_index=True)
+
+
+    with _rCol.expander("Detected cluster"):
+        st.empty()
+        for i, item in enumerate(communities):
+            dfCom = pd.DataFrame(item, columns=[f'cluster {i + 1}'])
+            st.dataframe(dfCom, use_container_width=True, hide_index=True)
+
 
 
 @st.cache_data(show_spinner=False)

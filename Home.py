@@ -37,7 +37,9 @@ if ss.get("submit"):
 
         if func_data:
             st.divider()
-            gui.draw_network(func_data)
+            network_data = gui.draw_network(func_data)
+            st.divider()
+            gui.load_df_analysis(network_data)
             st.divider()
             gui.load_fake_df(func_data)
 
