@@ -1,7 +1,6 @@
 import os
 import json
 import tempfile
-import datetime
 
 from streamlit_extras.mandatory_date_range import date_range_picker
 from streamlit_pandas_profiling import st_profile_report
@@ -9,6 +8,7 @@ from networkx.algorithms.cycles import simple_cycles
 from networkx.algorithms.community import louvain_communities
 from pyvis.network import Network
 from src.scanurl import APILink
+from datetime import datetime
 from io import StringIO
 
 import streamlit.components.v1 as components
@@ -50,7 +50,7 @@ def load_ui():
 
         start_date, end_date = date_range_picker(
             title="Pick a date range",
-            max_date=datetime.datetime.today()
+            max_date=datetime.today()
         )
 
         depth_input = st.number_input(
@@ -60,8 +60,8 @@ def load_ui():
             value=1
         )
 
-        start_datetime = datetime.datetime(start_date.year, start_date.month, start_date.day)
-        end_datetime = datetime.datetime(end_date.year, end_date.month, end_date.day)
+        start_datetime = datetime(start_date.year, start_date.month, start_date.day)
+        end_datetime = datetime(end_date.year, end_date.month, end_date.day)
 
         threshold_input = st.number_input(
             label="Select Amount USD to filter for",
@@ -82,11 +82,12 @@ def load_ui():
             ss["addresses"] = set()
             ss["depth"] = depth_input
             ss["start_time"] = int(start_datetime.timestamp())
-            ss["end_time"] = int(end_datetime.timestamp())
+            ss["end_time"] = int(end_datetime.timestamp()) if end_datetime.date() != datetime.now().date() else int(datetime.now().timestamp())
             ss["time_window"] = ss["end_time"] - ss["start_time"]
+            ss["submit"] = True
+
             if ss["end_time"] <= ss["start_time"]:
                 ss["end_time"] = ss["start_time"] + 86400
-            ss["submit"] = True
 
 
 def draw_network(data: set | list, height: int = 615, select_menu: bool = False, legend: bool = True):
