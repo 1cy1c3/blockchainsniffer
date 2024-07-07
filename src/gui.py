@@ -21,7 +21,7 @@ ss = st.session_state
 
 
 def load_sidebar_bsc():
-    st.sidebar.header("Blockchain Sniffer", divider='grey')
+    st.sidebar.header("Sybil-Tracker", divider='grey')
     with open("text/sidebar_bsc.txt") as file:
         sidebar_txt = file.read()
     with st.sidebar:

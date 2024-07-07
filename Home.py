@@ -8,7 +8,7 @@ ss = st.session_state
 
 st.set_page_config(page_icon="🐽", layout="wide")
 lCol, rCol = st.columns([1, 1])
-lCol.header('Blockchain Sniffer', divider='grey')
+lCol.header('Sybil-Tracker', divider='grey')
 
 
 utils.init_state_bsc()
