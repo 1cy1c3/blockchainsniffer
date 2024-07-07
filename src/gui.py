@@ -82,7 +82,7 @@ def load_ui():
             ss["addresses"] = set()
             ss["depth"] = depth_input
             ss["start_time"] = int(start_datetime.timestamp())
-            ss["end_time"] = int(end_datetime.timestamp()) if end_datetime.date() != datetime.now().date() else int(datetime.now().timestamp())
+            ss["end_time"] = int(end_datetime.timestamp()) if end_datetime.date() != datetime.now().date() else int(end_datetime.timestamp()) # previous datetime.now()
             ss["time_window"] = ss["end_time"] - ss["start_time"]
             ss["submit"] = True
 
@@ -125,6 +125,11 @@ def draw_network(data: set | list, height: int = 615, select_menu: bool = False,
         net.bgcolor = "#262730"  # Background color
         net.font_color = "white"  # Font color
 
+        if len(ss['addresses']) > 500:
+            physicsBool = False
+        else:
+            physicsBool = True
+
         net.options = {
             "interaction": {
                 "dragNodes": True,
@@ -140,7 +145,10 @@ def draw_network(data: set | list, height: int = 615, select_menu: bool = False,
                 "selectConnectedEdges": True,
                 "tooltipDelay": 300,
                 "zoomSpeed": .5,
-                "zoomView": True
+                "zoomView": True,
+            },
+            "physics": {
+                "enabled": physicsBool
             }
         }
 
@@ -213,7 +221,7 @@ def load_df_analysis(G, data):
             _lCol, _, _rCol = st.columns([.75, .25, 1])
             ss['addresses'] = set(item)
             dfCom = pd.DataFrame(item, columns=['wallet'])
-            _lCol.dataframe(dfCom, use_container_width=True, hide_index=True)
+            _lCol.dataframe(dfCom, hide_index=True, width=350)
             with _rCol:
                 draw_network(data, select_menu=False, height=300, legend=False)
             if i < len(communities) - 1:
@@ -226,7 +234,7 @@ def load_df_analysis(G, data):
 
             ss['addresses'] = set(item)
             dfCyc = pd.DataFrame(item, columns=['wallet'])
-            _lCol.dataframe(dfCyc, use_container_width=True, hide_index=True)
+            _lCol.dataframe(dfCyc, width=350, hide_index=True)
             with _rCol:
                 draw_network(data, select_menu=False, height=300, legend=False)
             if i < len(cycles) - 1:
