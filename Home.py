@@ -52,3 +52,6 @@ if ss.get("submit"):
 
     else:
         lCol.warning("**Wallet not found!**")
+
+else:
+    lCol.warning('**Select search parameters**')

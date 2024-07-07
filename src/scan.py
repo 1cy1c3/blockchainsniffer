@@ -22,12 +22,11 @@ def is_contract(address: str, chain: str) -> bool:
     # Send Request
     response = requests.get(url)
     if response.status_code != 200:
-        print("Error for request:", response.status_code)
+        print("Error for is_contract:", response.status_code)
         return False
 
     data = json.loads(response.text)
 
-    # Überprüfen Sie, ob die Anfrage erfolgreich war
     if data['result'] != '0x':
         return True
     else:
@@ -92,7 +91,7 @@ def create_dataset(tx: dict, min_value: int, chain: str) -> dict[str, str | int 
 
                 ss["tx_hashes"].append(tx_hash)
                 ss["counter"] += 1
-                print(f"counter: {ss['counter']} _________________________")
+                print(f"counter: {ss['counter']}")
 
                 return dataset
 
@@ -110,15 +109,13 @@ async def fetch_data(url: str, session: aiohttp.ClientSession) -> Optional[Dict]
         response.raise_for_status()
         data = await response.json()
         if data['status'] != '1':
-            print("Error for request:", data['status'])
-            return None
+            raise ValueError("Error for fetch_data:", data['status'])
         return data
 
 
-@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=1, max=10))
 async def erc20_transactions(wallet: str, depth: int, min_value: int, start_block: int, end_block: int, chain: str,
-                             visited: Set[str] = None, sem: asyncio.Semaphore = None,
-                             session: aiohttp.ClientSession = None) -> List[Dict]:
+                             visited: Set[str] = None, _sem: asyncio.Semaphore = None,
+                             _session: aiohttp.ClientSession = None) -> List[Dict]:
     if visited is None:
         visited = set()
 
@@ -135,8 +132,8 @@ async def erc20_transactions(wallet: str, depth: int, min_value: int, start_bloc
         address=wallet, tx_type="erc20", start_block=start_block, end_block=end_block, chain=chain,
                   ).get_api_link()
 
-    async with sem:  # Ensure semaphore limits concurrency
-        data = await fetch_data(url, session)
+    async with _sem:  # Ensure semaphore limits concurrency
+        data = await fetch_data(url, _session)
         if data['message'] == 'NOTOK':
             return []
 
@@ -158,11 +155,11 @@ async def erc20_transactions(wallet: str, depth: int, min_value: int, start_bloc
             # Create tasks for recursive calls
             if func_data['To'].lower() == wallet.lower():
                 tasks.append(erc20_transactions(
-                    from_address, depth - 1, min_value, start_block, end_block, chain, visited, sem, session)
+                    from_address, depth - 1, min_value, start_block, end_block, chain, visited, _sem, _session)
                 )
             else:
                 tasks.append(erc20_transactions(
-                    to_address, depth - 1, min_value, start_block, end_block, chain, visited, sem, session)
+                    to_address, depth - 1, min_value, start_block, end_block, chain, visited, _sem, _session)
                 )
 
     # Await all tasks concurrently
@@ -183,14 +180,14 @@ def run_asyncio_task(task):
         return loop.run_until_complete(task)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_resource(show_spinner=False)
 def main(wallet: str, depth: int, min_value: int, start_block: int, end_block: int, chain: str) -> List[Dict]:
     sem = asyncio.Semaphore(5)  # Limit to 5 concurrent requests
 
     async def async_main():
         async with aiohttp.ClientSession() as session:
-            result = await erc20_transactions(wallet, depth, min_value, start_block, end_block, chain, sem=sem,
-                                              session=session)
+            result = await erc20_transactions(wallet, depth, min_value, start_block, end_block, chain, _sem=sem,
+                                              _session=session)
             return result
 
     return run_asyncio_task(async_main())

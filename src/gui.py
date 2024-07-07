@@ -222,7 +222,7 @@ def load_df_analysis(G, data):
     with st.expander('Detected Cycles'):
         for i, item in enumerate(cycles):
             st.header(f'Cycle {i + 1}')
-            _lCol, _rCol = st.columns([1, 1])
+            _lCol, _, _rCol = st.columns([.75, .25, 1])
 
             ss['addresses'] = set(item)
             dfCyc = pd.DataFrame(item, columns=['wallet'])
