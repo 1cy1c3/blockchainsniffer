@@ -82,7 +82,8 @@ def load_ui():
             ss["addresses"] = set()
             ss["depth"] = depth_input
             ss["start_time"] = int(start_datetime.timestamp())
-            ss["end_time"] = int(end_datetime.timestamp()) if end_datetime.date() != datetime.now().date() else int(end_datetime.timestamp()) # previous datetime.now()
+            ss["end_time"] = int(end_datetime.timestamp()) if end_datetime.date() != datetime.now().date() else int(
+                end_datetime.timestamp())  # previous datetime.now()
             ss["time_window"] = ss["end_time"] - ss["start_time"]
             ss["submit"] = True
 
@@ -125,10 +126,25 @@ def draw_network(data: set | list, height: int = 615, select_menu: bool = False,
         net.bgcolor = "#262730"  # Background color
         net.font_color = "white"  # Font color
 
-        if len(ss['addresses']) > 500:
-            physicsBool = False
-        else:
-            physicsBool = True
+        # Add nodes to the network with sizes and colors
+        node_degrees = dict(G.degree())
+        physicsBool = True
+
+        for address, degree in node_degrees.items():
+            if address.lower() in ss['addresses']:
+                size = get_node_size(address)
+                # Set colors based on conditions
+                if address == ss["wallet"].lower():
+                    color = "red"
+                elif 10 <= int(node_degrees[address]):
+                    color = "yellow"
+                else:
+                    color = "lightblue"
+
+                if 50 < int(node_degrees[address]):
+                    physicsBool = False
+
+                net.add_node(address, color=color, size=size)
 
         net.options = {
             "interaction": {
@@ -148,26 +164,9 @@ def draw_network(data: set | list, height: int = 615, select_menu: bool = False,
                 "zoomView": True,
             },
             "physics": {
-                "enabled": physicsBool
+                "enabled": physicsBool,
             }
         }
-
-        # Add nodes to the network with sizes and colors
-        node_degrees = dict(G.degree())
-        for address, degree in node_degrees.items():
-            if address.lower() in ss['addresses']:
-                size = get_node_size(address)
-                # Set colors based on conditions
-                if address == ss["wallet"].lower():
-                    color = "red"
-                elif 10 <= int(node_degrees[address]):
-                    ss['addresses'].add(address)
-                    color = "yellow"
-                else:
-                    color = "lightblue"
-
-                net.add_node(address, color=color, size=size)
-
         # Add edges (transactions) to the network
         for tx in data:
             from_address = tx["From"]
@@ -210,13 +209,13 @@ def draw_network(data: set | list, height: int = 615, select_menu: bool = False,
 
 def load_df_analysis(G, data):
     st.info('Poorly loaded diagrams can be reloaded with pressing the "r" key and submitting wallet again.', icon='ℹ️')
-    cycles = list(simple_cycles(G))
+    # cycles = list(simple_cycles(G))
 
     communities = list(louvain_communities(G))
     communities = [list(item) for item in communities]
 
-    with st.expander("Detected Cluster"):
-        for i, item in enumerate(communities):
+    for i, item in enumerate(communities):
+        with st.expander(f'Cluster {i + 1}'):
             st.header(f'Cluster {i + 1}')
             _lCol, _, _rCol = st.columns([.75, .25, 1])
             ss['addresses'] = set(item)
@@ -224,21 +223,20 @@ def load_df_analysis(G, data):
             _lCol.dataframe(dfCom, hide_index=True, width=350)
             with _rCol:
                 draw_network(data, select_menu=False, height=300, legend=False)
-            if i < len(communities) - 1:
-                st.divider()
+            load_fake_df(data)
 
-    with st.expander('Detected Cycles'):
-        for i, item in enumerate(cycles):
-            st.header(f'Cycle {i + 1}')
-            _lCol, _, _rCol = st.columns([.75, .25, 1])
+    # with st.expander('Detected Cycles'):
+    #    for i, item in enumerate(cycles):
+    #        st.header(f'Cycle {i + 1}')
+    #        _lCol, _, _rCol = st.columns([.75, .25, 1])#
 
-            ss['addresses'] = set(item)
-            dfCyc = pd.DataFrame(item, columns=['wallet'])
-            _lCol.dataframe(dfCyc, width=350, hide_index=True)
-            with _rCol:
-                draw_network(data, select_menu=False, height=300, legend=False)
-            if i < len(cycles) - 1:
-                st.divider()
+    #        ss['addresses'] = set(item)
+    #        dfCyc = pd.DataFrame(item, columns=['wallet'])
+    #        _lCol.dataframe(dfCyc, width=350, hide_index=True)
+    #        with _rCol:
+    #            draw_network(data, select_menu=False, height=300, legend=False)
+    #        if i < len(cycles) - 1:
+    #            st.divider()
 
 
 @st.cache_data(show_spinner=False)
@@ -250,7 +248,7 @@ def load_record(data_json: list[dict]):
 
 def load_fake_df(data: list[dict]):
     if data:
-        hcol1, hcol2, hcol3, hcol4, hcol5, hcol6, hcol7, hcol8 = st.columns([1, 1, 1, 1, 1, 1, 1, 1, ])
+        hcol1, hcol2, hcol3, hcol4, hcol5, hcol6, hcol7, hcol8 = st.columns([1, 1, 1, 1, 1, 1, 1, 1])
 
         st.divider()
 
@@ -264,34 +262,35 @@ def load_fake_df(data: list[dict]):
         hcol8.write('**Ticker**')
 
         for i in range(len(data)):
-            prefixTo, suffixTo = ut.get_color(data[i]['To'])
-            prefixFrom, suffixFrom = ut.get_color(data[i]['From'])
+            if data[i]['From'].lower() in ss['addresses'] and data[i]['To'].lower() in ss['addresses']:
+                prefixTo, suffixTo = '', ''  # ut.get_color(data[i]['To'])
+                prefixFrom, suffixFrom = '', ''  # ut.get_color(data[i]['From'])
 
-            with st.container(border=True):
-                base_tx_url = APILink(address=None, tx_type=None).get_tx_url()
-                base_wallet_url = APILink(address=None, tx_type=None).get_wallet_url()
+                with st.container(border=True):
+                    base_tx_url = APILink(address=None, tx_type=None).get_tx_url()
+                    base_wallet_url = APILink(address=None, tx_type=None).get_wallet_url()
 
-                col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([1, 1, 1, 1, 1, 1, 1, 1, ])
+                    col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([1, 1, 1, 1, 1, 1, 1, 1, ])
 
-                col1.write(data[i]['Time'])
+                    col1.write(data[i]['Time'])
 
-                col2.link_button(
-                    f"{data[i]['Hash'][:6]}...{data[i]['Hash'][-5:]}",
-                    url=f"{base_tx_url}{data[i]['Hash']}",
-                    use_container_width=True
-                )
-                col3.link_button(
-                    f"{prefixFrom}{data[i]['From'][:6]}...{data[i]['From'][-5:]}{suffixFrom}",
-                    url=f"{base_wallet_url}{data[i]['From']}",
-                    use_container_width=True
-                )
-                col4.link_button(
-                    f"{prefixTo}{data[i]['To'][:6]}...{data[i]['To'][-5:]}{suffixTo}",
-                    url=f"{base_wallet_url}{data[i]['To']}",
-                    use_container_width=True
-                )
+                    col2.link_button(
+                        f"{data[i]['Hash'][:6]}...{data[i]['Hash'][-5:]}",
+                        url=f"{base_tx_url}{data[i]['Hash']}",
+                        use_container_width=True
+                    )
+                    col3.link_button(
+                        f"{prefixFrom}{data[i]['From'][:6]}...{data[i]['From'][-5:]}{suffixFrom}",
+                        url=f"{base_wallet_url}{data[i]['From']}",
+                        use_container_width=True
+                    )
+                    col4.link_button(
+                        f"{prefixTo}{data[i]['To'][:6]}...{data[i]['To'][-5:]}{suffixTo}",
+                        url=f"{base_wallet_url}{data[i]['To']}",
+                        use_container_width=True
+                    )
 
-                col5.write(str(int(data[i]['Token_Amount'])))
-                col6.write(str(int(data[i]['Value_USD'])))
-                col7.write(data[i]['Token'])
-                col8.write(data[i]['Symbol'])
+                    col5.write(str(int(data[i]['Token_Amount'])))
+                    col6.write(str(int(data[i]['Value_USD'])))
+                    col7.write(data[i]['Token'])
+                    col8.write(data[i]['Symbol'])

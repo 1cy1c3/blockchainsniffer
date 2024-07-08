@@ -44,7 +44,7 @@ if ss.get("submit"):
             st.divider()
             gui.load_df_analysis(network_data, func_data)
             st.divider()
-            gui.load_fake_df(func_data)
+            # gui.load_fake_df(func_data)
 
         else:
             lCol.warning("**No transactions for this parameters**")

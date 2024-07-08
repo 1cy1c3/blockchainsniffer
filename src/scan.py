@@ -10,11 +10,14 @@ from typing import Any, Set, List, Dict, Optional
 from tenacity import retry, stop_after_attempt, wait_exponential
 from src.scanurl import APILink
 from datetime import datetime
+from aiocache import cached
+from aiocache.serializers import PickleSerializer
 
 ss = st.session_state
 
 
 @st.cache_data(show_spinner=False)
+@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=1, max=10))
 def is_contract(address: str, chain: str) -> bool:
     # Build URL
     url = APILink(address=address, tx_type=None, chain=chain).check_for_contract()
@@ -22,8 +25,7 @@ def is_contract(address: str, chain: str) -> bool:
     # Send Request
     response = requests.get(url)
     if response.status_code != 200:
-        print("Error for is_contract:", response.status_code)
-        return False
+        raise ValueError("Error for is_contract:", response.status_code)
 
     data = json.loads(response.text)
 
@@ -34,10 +36,14 @@ def is_contract(address: str, chain: str) -> bool:
 
 
 @st.cache_data(show_spinner=False)
+@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=1, max=10))
 def check_wallet(address: str) -> bool:
     url = APILink(address=address, tx_type=None).check_wallet()
 
     response = requests.get(url)
+    if response.status_code != 200:
+        raise ValueError("Error for check_wallet:", response.status_code)
+
     data = response.json()
 
     if data['message'] == 'OK':
@@ -103,6 +109,7 @@ def timestamp_to_date(timestamp: int) -> str:
     return date.strftime('%Y/%m/%d %H:%M:%S')
 
 
+@cached(serializer=PickleSerializer())
 @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=1, max=10))
 async def fetch_data(url: str, session: aiohttp.ClientSession) -> Optional[Dict]:
     async with session.get(url) as response:
