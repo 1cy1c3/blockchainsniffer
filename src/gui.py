@@ -4,11 +4,11 @@ import tempfile
 
 from streamlit_extras.mandatory_date_range import date_range_picker
 from streamlit_pandas_profiling import st_profile_report
-from networkx.algorithms.cycles import simple_cycles
+# from networkx.algorithms.cycles import simple_cycles
 from networkx.algorithms.community import louvain_communities
 from pyvis.network import Network
 from src.scanurl import APILink
-from datetime import datetime
+from datetime import datetime, time
 from io import StringIO
 
 import streamlit.components.v1 as components
@@ -48,20 +48,12 @@ def load_ui():
             options=("Ethereum", "Arbitrum", "Polygon", "Optimism", "Base", "Scroll")
         )
 
-        start_date, end_date = date_range_picker(
-            title="Pick a date range",
-            max_date=datetime.today()
-        )
-
         depth_input = st.number_input(
             label="Pick a depth",
             min_value=1,
             max_value=5,
             value=1
         )
-
-        start_datetime = datetime(start_date.year, start_date.month, start_date.day)
-        end_datetime = datetime(end_date.year, end_date.month, end_date.day)
 
         threshold_input = st.number_input(
             label="Select Amount USD to filter for",
@@ -70,6 +62,18 @@ def load_ui():
             value=0,
             step=500
         )
+
+        start_date, end_date = date_range_picker(
+            title="Pick a date range",
+            max_date=datetime.today()
+        )
+
+        start_datetime = datetime(start_date.year, start_date.month, start_date.day)
+        end_datetime = datetime(end_date.year, end_date.month, end_date.day)
+
+        with st.expander('Advanced time settings'):
+            startTime = st.time_input('Start time', value=time(0, 0, 0), key='startTime')
+            endTime = st.time_input('Start time', value=time(0, 0, 0), key='endTime')
 
         submit_wallet = st.form_submit_button(label="Submit Wallet", on_click=ut.clear_ss(), use_container_width=True)
         st.info('The bigger the depth and time window, the longer the calculation will take. '
@@ -81,12 +85,11 @@ def load_ui():
             ss["wallet"] = wallet_input
             ss["addresses"] = set()
             ss["depth"] = depth_input
-            ss["start_time"] = int(start_datetime.timestamp())
-            ss["end_time"] = int(end_datetime.timestamp()) if end_datetime.date() != datetime.now().date() else int(
-                end_datetime.timestamp())  # previous datetime.now()
+            ss["start_time"] = int(start_datetime.timestamp()) + int(ut.convert_time(startTime))
+            ss["end_time"] = int(end_datetime.timestamp()) + int(ut.convert_time(endTime)) # if end_datetime.date() != datetime.now().date() else int(end_datetime.timestamp() + ut.convert_time(endTime)) - > previous datetime.now()
             ss["time_window"] = ss["end_time"] - ss["start_time"]
             ss["submit"] = True
-
+            print(ss["end_time"], ss["start_time"])
             if ss["end_time"] <= ss["start_time"]:
                 ss["end_time"] = ss["start_time"] + 86400
 

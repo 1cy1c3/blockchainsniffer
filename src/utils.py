@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+from datetime import time
 
 ss = st.session_state
 
@@ -69,4 +70,13 @@ def get_color(address: str) -> tuple[str, str]:
         prefix = ':blue['
         suffix = ']'
     return prefix, suffix
+
+
+def convert_time(_time: time) -> int:
+    tempList = str(_time).split(':')
+    seconds = 0
+
+    for i in range(len(tempList)):
+        seconds += int(tempList[i]) * (60 ** (2 - i))
+    return seconds
 

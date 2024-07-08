@@ -115,7 +115,7 @@ async def fetch_data(url: str, session: aiohttp.ClientSession) -> Optional[Dict]
     async with session.get(url) as response:
         response.raise_for_status()
         data = await response.json()
-        if data['status'] != '1':
+        if data['message'] == 'NOTOK':
             raise ValueError("Error for fetch_data:", data['status'])
         return data
 
