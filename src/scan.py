@@ -121,8 +121,9 @@ async def fetch_data(url: str, session: aiohttp.ClientSession) -> Optional[Dict]
 
 
 async def erc20_transactions(wallet: str, depth: int, min_value: int, start_block: int, end_block: int, chain: str,
-                             visited: Set[str] = None, _sem: asyncio.Semaphore = None,
+                             counter, visited: Set[str] = None, _sem: asyncio.Semaphore = None,
                              _session: aiohttp.ClientSession = None) -> List[Dict]:
+    counter.write(f'Transactions found: {ss["counter"]}')
     if visited is None:
         visited = set()
 
@@ -162,11 +163,11 @@ async def erc20_transactions(wallet: str, depth: int, min_value: int, start_bloc
             # Create tasks for recursive calls
             if func_data['To'].lower() == wallet.lower():
                 tasks.append(erc20_transactions(
-                    from_address, depth - 1, min_value, start_block, end_block, chain, visited, _sem, _session)
+                    from_address, depth - 1, min_value, start_block, end_block, chain, counter, visited, _sem, _session)
                 )
             else:
                 tasks.append(erc20_transactions(
-                    to_address, depth - 1, min_value, start_block, end_block, chain, visited, _sem, _session)
+                    to_address, depth - 1, min_value, start_block, end_block, chain, counter, visited, _sem, _session)
                 )
 
     # Await all tasks concurrently
@@ -190,11 +191,12 @@ def run_asyncio_task(task):
 @st.cache_resource(show_spinner=False)
 def main(wallet: str, depth: int, min_value: int, start_block: int, end_block: int, chain: str) -> List[Dict]:
     sem = asyncio.Semaphore(5)  # Limit to 5 concurrent requests
+    _counter = st.empty()
 
     async def async_main():
         async with aiohttp.ClientSession() as session:
-            result = await erc20_transactions(wallet, depth, min_value, start_block, end_block, chain, _sem=sem,
-                                              _session=session)
+            result = await erc20_transactions(wallet, depth, min_value, start_block, end_block, chain, _counter,
+                                              _sem=sem, _session=session)
             return result
 
     return run_asyncio_task(async_main())

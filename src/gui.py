@@ -209,7 +209,7 @@ def draw_network(data: set | list, addresses: set, height: int = 615, select_men
                 components.html(html_content, height=height)
 
         else:
-            components.html(html_content, height=435)
+            components.html(html_content, height=height)
 
     return G
 
@@ -222,15 +222,16 @@ def load_df_analysis(G, data):
     communities = [list(item) for item in communities]
 
     for i, item in enumerate(communities):
-        with st.expander(f'Cluster {i + 1}'):
+        with st.container(border=True):
             st.header(f'Cluster {i + 1}')
             _lCol, _, _rCol = st.columns([.75, .25, 1])
             ss['addresses'] = set(item)
             dfCom = pd.DataFrame(item, columns=['wallet'])
             _lCol.dataframe(dfCom, hide_index=True, width=350)
             with _rCol:
-                draw_network(data, addresses=ss['addresses'], select_menu=False, height=300, legend=False)
-            load_fake_df(data)
+                draw_network(data, addresses=ss['addresses'], select_menu=False, legend=False)
+            with st.expander('**Transaction Data**'):
+                load_fake_df(data)
 
     # with st.expander('Detected Cycles'):
     #    for i, item in enumerate(cycles):

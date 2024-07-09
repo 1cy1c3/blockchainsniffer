@@ -25,12 +25,14 @@ if ss.get("submit"):
     wallet = scan.check_wallet(ss["wallet"])
 
     if wallet:
+        counter = st.empty()
+
         start_time = ss["start_time"]
         end_time = ss["end_time"]
         ss["start_block"] = scan.get_block_by_timestamp(start_time, ss['chain'])
         ss["end_block"] = scan.get_block_by_timestamp(end_time, ss['chain'])
 
-        with lCol.status('Searching the Blockchain'):
+        with lCol.status('Searching the Blockchain', expanded=True):
             func_data = scan.main(
                 ss["wallet"], ss['depth'], ss['threshold_usd'], ss["start_block"], ss["end_block"], ss['chain']
             )
@@ -44,7 +46,6 @@ if ss.get("submit"):
             st.divider()
             gui.load_df_analysis(network_data, func_data)
             st.divider()
-            # gui.load_fake_df(func_data)
 
         else:
             lCol.warning("**No transactions for this parameters**")
