@@ -1,6 +1,5 @@
-import os
 import json
-import tempfile
+import random
 
 from streamlit_extras.mandatory_date_range import date_range_picker
 from streamlit_pandas_profiling import st_profile_report
@@ -9,7 +8,7 @@ from networkx.algorithms.community import louvain_communities
 from pyvis.network import Network
 from src.scanurl import APILink
 from datetime import datetime, time
-from io import StringIO
+from io import StringIO, BytesIO
 
 import streamlit.components.v1 as components
 import src.utils as ut
@@ -89,109 +88,116 @@ def load_ui():
             ss["end_time"] = int(end_datetime.timestamp()) + int(ut.convert_time(endTime)) # if end_datetime.date() != datetime.now().date() else int(end_datetime.timestamp() + ut.convert_time(endTime)) - > previous datetime.now()
             ss["time_window"] = ss["end_time"] - ss["start_time"]
             ss["submit"] = True
-            print(ss["end_time"], ss["start_time"])
             if ss["end_time"] <= ss["start_time"]:
                 ss["end_time"] = ss["start_time"] + 86400
 
 
-def draw_network(data: set | list, height: int = 615, select_menu: bool = False, legend: bool = True):
-    df = pd.read_json(StringIO(json.dumps(data)))
-    G = nx.from_pandas_edgelist(df, source="From", target="To", edge_attr="Value_USD")
+@st.cache_resource(show_spinner=False)
+def draw_network(data: set | list, addresses: set, height: int = 615, select_menu: bool = False, legend: bool = True):
+    # Function to generate the network HTML content
+    def generate_network_html():
+        df = pd.read_json(StringIO(json.dumps(data)))
+        G = nx.from_pandas_edgelist(df, source="From", target="To", edge_attr="Value_USD")
 
-    if data:
-        # Create the volume_per_address dictionary
-        volume_per_address = {}
-        for tx in data:
-            from_address = tx["From"]
-            to_address = tx["To"]
-            value = tx["Value_USD"]
+        if data:
+            # Create the volume_per_address dictionary
+            volume_per_address = {}
+            for tx in data:
+                from_address = tx["From"]
+                to_address = tx["To"]
+                value = tx["Value_USD"]
 
-            volume_per_address[from_address] = volume_per_address.get(from_address, 0) + value
-            volume_per_address[to_address] = volume_per_address.get(to_address, 0) + value
+                volume_per_address[from_address] = volume_per_address.get(from_address, 0) + value
+                volume_per_address[to_address] = volume_per_address.get(to_address, 0) + value
 
-        # Normalize node sizes for better visualization
-        max_volume = max(volume_per_address.values())
-        min_size = 10  # Minimum node size
-        max_size = 50  # Maximum node size
+            # Normalize node sizes for better visualization
+            max_volume = max(volume_per_address.values())
+            min_size = 10  # Minimum node size
+            max_size = 50  # Maximum node size
 
-        # Create a function to scale node sizes
-        def get_node_size(wallet):
-            return min_size + (volume_per_address[wallet] / max_volume) * (max_size - min_size)
+            # Create a function to scale node sizes
+            def get_node_size(wallet):
+                return min_size + (volume_per_address[wallet] / max_volume) * (max_size - min_size)
 
-        if height != 615:
             # Create the network
-            net = Network(notebook=True, neighborhood_highlight=True, cdn_resources='remote', directed=True,
-                          select_menu=select_menu, layout=True, height=300)
-        else:
-            net = Network(notebook=True, neighborhood_highlight=True, cdn_resources='remote', directed=True,
-                          select_menu=select_menu, layout=True)
+            if height != 615:
+                net = Network(notebook=True, neighborhood_highlight=True, cdn_resources='remote', directed=True,
+                              select_menu=select_menu, layout=True, height=300)
+            else:
+                net = Network(notebook=True, neighborhood_highlight=True, cdn_resources='remote', directed=True,
+                              select_menu=select_menu, layout=True)
 
-        net.bgcolor = "#262730"  # Background color
-        net.font_color = "white"  # Font color
+            net.bgcolor = "#262730"  # Background color
+            net.font_color = "white"  # Font color
 
-        # Add nodes to the network with sizes and colors
-        node_degrees = dict(G.degree())
-        physicsBool = True
+            # Add nodes to the network with sizes and colors
+            node_degrees = dict(G.degree())
+            physicsBool = True
 
-        for address, degree in node_degrees.items():
-            if address.lower() in ss['addresses']:
-                size = get_node_size(address)
-                # Set colors based on conditions
-                if address == ss["wallet"].lower():
-                    color = "red"
-                elif 10 <= int(node_degrees[address]):
-                    color = "yellow"
-                else:
-                    color = "lightblue"
+            for address, degree in node_degrees.items():
+                if address.lower() in addresses:
+                    size = get_node_size(address)
+                    # Set colors based on conditions
+                    if address == ss['wallet'].lower():
+                        color = "red"
+                    elif 10 <= int(node_degrees[address]):
+                        color = "yellow"
+                    else:
+                        color = "lightblue"
 
-                if 50 < int(node_degrees[address]):
-                    physicsBool = False
+                    if 50 < int(node_degrees[address]):
+                        physicsBool = False
 
-                net.add_node(address, color=color, size=size)
+                    net.add_node(address, color=color, size=size)
 
-        net.options = {
-            "interaction": {
-                "dragNodes": True,
-                "dragView": True,
-                "hideEdgesOnDrag": False,
-                "hideEdgesOnZoom": False,
-                "hideNodesOnDrag": False,
-                "hover": True,
-                "hoverConnectedEdges": True,
-                "multiselect": False,
-                "navigationButtons": False,
-                "selectable": True,
-                "selectConnectedEdges": True,
-                "tooltipDelay": 300,
-                "zoomSpeed": .5,
-                "zoomView": True,
-            },
-            "physics": {
-                "enabled": physicsBool,
+            net.options = {
+                "interaction": {
+                    "dragNodes": True,
+                    "dragView": True,
+                    "hideEdgesOnDrag": False,
+                    "hideEdgesOnZoom": False,
+                    "hideNodesOnDrag": False,
+                    "hover": True,
+                    "hoverConnectedEdges": True,
+                    "multiselect": False,
+                    "navigationButtons": False,
+                    "selectable": True,
+                    "selectConnectedEdges": True,
+                    "tooltipDelay": 300,
+                    "zoomSpeed": .5,
+                    "zoomView": True,
+                },
+                "physics": {
+                    "enabled": physicsBool,
+                }
             }
-        }
-        # Add edges (transactions) to the network
-        for tx in data:
-            from_address = tx["From"]
-            to_address = tx["To"]
-            if from_address in net.node_ids and to_address in net.node_ids:
-                net.add_edge(from_address, to_address)
+            # Add edges (transactions) to the network
+            for tx in data:
+                from_address = tx["From"]
+                to_address = tx["To"]
+                if from_address in net.node_ids and to_address in net.node_ids:
+                    net.add_edge(from_address, to_address)
 
-        if not os.path.exists("temp"):
-            os.makedirs("temp")
+            # Save the network to a BytesIO object
+            html_bytes = BytesIO(net.generate_html().encode('utf-8'))
+            html_bytes.seek(0)
 
-        file_descriptor, temp_name = tempfile.mkstemp(suffix=".html", dir="temp")
-        os.close(file_descriptor)
-        net.show(temp_name)
+            return html_bytes.read().decode('utf-8'), G
+        else:
+            return None, None
 
-        # HTML file open and read the content
-        with open(temp_name, "r", encoding="utf-8") as file:
-            html_content = file.read()
+    # Use the identifier to create a unique key for session state
+    session_key = f'network_html_{random.randint(1, 1000000)}'
 
-        # Delete the temporary file
-        os.remove(temp_name)
+    if session_key not in st.session_state:
+        st.session_state[session_key], G = generate_network_html()
+    else:
+        G = None
 
-        # Output the HTML content in Streamlit
+    html_content = st.session_state[session_key]
+
+    # Output the HTML content in Streamlit
+    if html_content:
         if legend:
             rCol, lCol = st.columns([10, 1])
 
@@ -205,9 +211,7 @@ def draw_network(data: set | list, height: int = 615, select_menu: bool = False,
         else:
             components.html(html_content, height=435)
 
-        return G
-    else:
-        return None
+    return G
 
 
 def load_df_analysis(G, data):
@@ -225,7 +229,7 @@ def load_df_analysis(G, data):
             dfCom = pd.DataFrame(item, columns=['wallet'])
             _lCol.dataframe(dfCom, hide_index=True, width=350)
             with _rCol:
-                draw_network(data, select_menu=False, height=300, legend=False)
+                draw_network(data, addresses=ss['addresses'], select_menu=False, height=300, legend=False)
             load_fake_df(data)
 
     # with st.expander('Detected Cycles'):

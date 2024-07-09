@@ -40,7 +40,7 @@ if ss.get("submit"):
             ss['addresses'].update(set([item['To'] for item in func_data]))
 
             st.divider()
-            network_data = gui.draw_network(func_data)
+            network_data = gui.draw_network(func_data, addresses=ss['addresses'])
             st.divider()
             gui.load_df_analysis(network_data, func_data)
             st.divider()
