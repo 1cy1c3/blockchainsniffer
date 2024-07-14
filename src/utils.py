@@ -41,7 +41,7 @@ def init_state_bsc():
     if "chain" not in ss:
         ss["chain"] = None
     if "wallet" not in ss:
-        ss["wallet"] = None
+        ss["wallet"] = '0x9E29A34dFd3Cb99798E8D88515FEe01f2e4cD5a8'
     if "wallet_info" not in ss:
         ss["wallet_info"] = []
 
@@ -80,3 +80,11 @@ def convert_time(_time: time) -> int:
         seconds += int(tempList[i]) * (60 ** (2 - i))
     return seconds
 
+
+def set_new_wallet(wallet):
+    save_state()
+    ss['wallet'] = wallet
+
+
+def save_state():
+    ss['submit'] = True

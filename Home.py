@@ -32,7 +32,7 @@ if ss.get("submit"):
         ss["start_block"] = scan.get_block_by_timestamp(start_time, ss['chain'])
         ss["end_block"] = scan.get_block_by_timestamp(end_time, ss['chain'])
 
-        with lCol.status('Searching the Blockchain', expanded=True):
+        with lCol.status(f'Searching address: **{ss["wallet"]}**', expanded=True):
             func_data = scan.main(
                 ss["wallet"], ss['depth'], ss['threshold_usd'], ss["start_block"], ss["end_block"], ss['chain']
             )

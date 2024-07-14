@@ -1,10 +1,20 @@
 import json
 import random
 
+from networkx.algorithms.community import (
+    louvain_communities,
+    greedy_modularity_communities,
+    naive_greedy_modularity_communities,
+    label_propagation_communities,
+    asyn_lpa_communities,
+    fast_label_propagation_communities
+)
 from streamlit_extras.mandatory_date_range import date_range_picker
-from streamlit_pandas_profiling import st_profile_report
-# from networkx.algorithms.cycles import simple_cycles
-from networkx.algorithms.community import louvain_communities
+from networkx.algorithms.cycles import (simple_cycles,
+                                        cycle_basis,
+                                        minimum_cycle_basis,
+                                        chordless_cycles)
+
 from pyvis.network import Network
 from src.scanurl import APILink
 from datetime import datetime, time
@@ -27,7 +37,7 @@ def load_sidebar_bsc():
         st.write(sidebar_txt, unsafe_allow_html=True)
 
 
-@st.cache_data(show_spinner=False)
+#@st.cache_data(show_spinner=False)
 def load_css(file: str):
     with open(f"css/{file}.css") as f:
         sidebar_css = f.read()
@@ -39,7 +49,7 @@ def load_ui():
 
         wallet_input = st.text_input(
             label="Enter any Ethereum Address",
-            value="0x9E29A34dFd3Cb99798E8D88515FEe01f2e4cD5a8"
+            value=ss['wallet']
         )
 
         chain_input = st.selectbox(
@@ -72,7 +82,15 @@ def load_ui():
 
         with st.expander('Advanced time settings'):
             startTime = st.time_input('Start time', value=time(0, 0, 0), key='startTime')
-            endTime = st.time_input('Start time', value=time(0, 0, 0), key='endTime')
+            endTime = st.time_input('End time', value=time(0, 0, 0), key='endTime')
+
+        with st.expander('Searching algorithms'):
+            ss['algo'] = st.radio('Choose one:',
+                                  ['louvain communities', 'naive greedy modularity communities',
+                                   'greedy modularity communities', 'simple cycles', 'cycle basis', 'chordless cycles',
+                                   'minimum cycle basis', 'label propagation communities', 'asyn lpa communities',
+                                   'fast label propagation communities']
+                                  )
 
         submit_wallet = st.form_submit_button(label="Submit Wallet", on_click=ut.clear_ss(), use_container_width=True)
         st.info('The bigger the depth and time window, the longer the calculation will take. '
@@ -85,7 +103,7 @@ def load_ui():
             ss["addresses"] = set()
             ss["depth"] = depth_input
             ss["start_time"] = int(start_datetime.timestamp()) + int(ut.convert_time(startTime))
-            ss["end_time"] = int(end_datetime.timestamp()) + int(ut.convert_time(endTime)) # if end_datetime.date() != datetime.now().date() else int(end_datetime.timestamp() + ut.convert_time(endTime)) - > previous datetime.now()
+            ss["end_time"] = int(end_datetime.timestamp()) + int(ut.convert_time(endTime))
             ss["time_window"] = ss["end_time"] - ss["start_time"]
             ss["submit"] = True
             if ss["end_time"] <= ss["start_time"]:
@@ -215,43 +233,51 @@ def draw_network(data: set | list, addresses: set, height: int = 615, select_men
 
 
 def load_df_analysis(G, data):
-    st.info('Poorly loaded diagrams can be reloaded with pressing the "r" key and submitting wallet again.', icon='ℹ️')
-    # cycles = list(simple_cycles(G))
+    if ss['algo'] == 'louvain communities':
+        communities = list(louvain_communities(G))
+    elif ss['algo'] == 'naive greedy modularity communities':
+        communities = list(naive_greedy_modularity_communities(G))
+    elif ss['algo'] == 'greedy modularity communities':
+        communities = list(greedy_modularity_communities(G))
+    elif ss['algo'] == 'simple cycles':
+        communities = list(simple_cycles(G))
+    elif ss['algo'] == 'cycle basis':
+        communities = list(cycle_basis(G))
+    elif ss['algo'] == 'chordless cycles':
+        communities = list(chordless_cycles(G))
+    elif ss['algo'] == 'minimum cycle basis':
+        communities = list(minimum_cycle_basis(G))
+    elif ss['algo'] == 'label propagation communities':
+        communities = list(label_propagation_communities(G))
+    elif ss['algo'] == 'asyn lpa communities':
+        communities = list(asyn_lpa_communities(G))
+    elif ss['algo'] == 'fast label propagation communities':
+        communities = list(fast_label_propagation_communities(G))
+    else:
+        communities = []
 
-    communities = list(louvain_communities(G))
     communities = [list(item) for item in communities]
 
     for i, item in enumerate(communities):
         with st.container(border=True):
             st.header(f'Cluster {i + 1}')
-            _lCol, _, _rCol = st.columns([.75, .25, 1])
+            _lCol, _, _rCol = st.columns([1, .05, 1])
+
             ss['addresses'] = set(item)
             dfCom = pd.DataFrame(item, columns=['wallet'])
-            _lCol.dataframe(dfCom, hide_index=True, width=350)
+
+            with _lCol:
+                with st.expander('Wallets'):
+                    load_search_options(item)
+                    st.download_button('Download csv', dfCom.to_csv(index=False),
+                                       file_name=f'{ss["wallet"]}_cluster{i + 1}.csv', use_container_width=True,
+                                       on_click=ut.save_state)
+
             with _rCol:
                 draw_network(data, addresses=ss['addresses'], select_menu=False, legend=False)
+
             with st.expander('**Transaction Data**'):
                 load_fake_df(data)
-
-    # with st.expander('Detected Cycles'):
-    #    for i, item in enumerate(cycles):
-    #        st.header(f'Cycle {i + 1}')
-    #        _lCol, _, _rCol = st.columns([.75, .25, 1])#
-
-    #        ss['addresses'] = set(item)
-    #        dfCyc = pd.DataFrame(item, columns=['wallet'])
-    #        _lCol.dataframe(dfCyc, width=350, hide_index=True)
-    #        with _rCol:
-    #            draw_network(data, select_menu=False, height=300, legend=False)
-    #        if i < len(cycles) - 1:
-    #            st.divider()
-
-
-@st.cache_data(show_spinner=False)
-def load_record(data_json: list[dict]):
-    data_csv = ut.json_to_csv(data_json)
-    data_report = data_csv.profile_report()
-    st_profile_report(data_report)
 
 
 def load_fake_df(data: list[dict]):
@@ -302,3 +328,15 @@ def load_fake_df(data: list[dict]):
                     col6.write(str(int(data[i]['Value_USD'])))
                     col7.write(data[i]['Token'])
                     col8.write(data[i]['Symbol'])
+
+
+def load_search_options(data: list):
+    if data:
+        for i, wallet in enumerate(data):
+            with st.container(border=True):
+                lCol, rCol = st.columns([3, 1])
+                lCol.write(wallet)
+                rCol.button(
+                    'Search', on_click=ut.set_new_wallet, args=(wallet,),
+                    key=f'{wallet}_{random.randint(1, 2000000000)}', use_container_width=True
+                )
