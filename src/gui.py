@@ -37,7 +37,7 @@ def load_sidebar_bsc():
         st.write(sidebar_txt, unsafe_allow_html=True)
 
 
-#@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False)
 def load_css(file: str):
     with open(f"css/{file}.css") as f:
         sidebar_css = f.read()
