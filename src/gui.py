@@ -268,10 +268,12 @@ def load_df_analysis(G, data):
 
             with _lCol:
                 with st.expander('Wallets'):
-                    load_search_options(item)
+
                     st.download_button('Download csv', dfCom.to_csv(index=False),
                                        file_name=f'{ss["wallet"]}_cluster{i + 1}.csv', use_container_width=True,
                                        on_click=ut.save_state)
+
+                    load_search_options(item)
 
             with _rCol:
                 draw_network(data, addresses=ss['addresses'], select_menu=False, legend=False)
